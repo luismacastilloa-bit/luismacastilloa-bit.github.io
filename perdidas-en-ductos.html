@@ -1,0 +1,367 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pérdidas en Ductos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabecera con pestañas; dos paneles comparativos (A vs B) con flujo animado + perfil de presión; banda de resultado; controles. Look oscuro único, misma serie visual que "Número de Reynolds". */
+:root{
+  color-scheme:dark;
+  --bg:#060a17; --card:#0a1029; --card2:#0e1636; --line:#1f2c55; --fg:#e9eefb; --muted:#8a96b8;
+  --a:#4fe0ff; --b:#ff6b4a; --amber:#ffc65a;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --sans:"Instrument Sans",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans)}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px;padding-block:24px 36px;display:grid;gap:16px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 32px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--a)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,4.2vw,54px);line-height:1.02;margin:8px 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.lede{color:var(--muted);font-size:16px;line-height:1.5;max-width:54ch;margin:0}
+.sig{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+.sig b{color:var(--fg);font-weight:500}
+.tabs{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px;background:var(--card)}
+.tabs button{font:inherit;font-size:14px;font-weight:500;color:var(--fg);background:transparent;border:0;border-radius:999px;padding:8px 16px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--fg);color:var(--bg)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.panels.stack{grid-template-columns:minmax(0,1fr)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px 16px;display:grid;gap:12px;min-width:0;align-content:start}
+.ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:3px 9px;border-radius:999px;border:1px solid}
+.badge.a{color:var(--a);border-color:var(--a)} .badge.b{color:var(--b);border-color:var(--b)}
+.ph h2{font-family:var(--display);font-size:15px;font-weight:600;margin:0;letter-spacing:.01em}
+.ph p{margin:0;color:var(--muted);font-size:13px;flex-basis:100%}
+canvas{width:100%;display:block;aspect-ratio:1.08;border-radius:10px;background:#070c20}
+.panels.stack canvas{aspect-ratio:3.2}
+@media (max-width:760px){.panels.stack canvas{aspect-ratio:1.8}}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.kpi{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:3px;min-width:0}
+.kpi span{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi b{font-family:var(--mono);font-weight:500;font-size:16px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.brk{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin:0}
+@media (max-width:1100px) and (min-width:761px){.panels:not(.stack) .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.summary{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px 28px;align-items:center}
+.big{font-family:var(--display);font-weight:700;font-size:clamp(42px,5.4vw,70px);line-height:1;color:var(--b);text-shadow:0 0 30px color-mix(in srgb,var(--b) 40%,transparent);font-variant-numeric:tabular-nums}
+.sumtxt{display:grid;gap:4px;min-width:0}
+.sumtxt strong{font-size:17px;font-weight:600;text-wrap:balance}
+.sumtxt span{color:var(--muted);font-size:14px;line-height:1.45}
+.energy{display:grid;gap:2px;text-align:right}
+.energy b{font-family:var(--display);font-weight:600;font-size:clamp(22px,2.6vw,32px);color:var(--amber);font-variant-numeric:tabular-nums}
+.energy span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:760px){.summary{grid-template-columns:minmax(0,1fr)}.energy{text-align:left}}
+
+.controls{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px 24px;align-items:start}
+.group{display:grid;gap:8px;min-width:0}
+.glabel{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.glabel output{color:var(--fg);letter-spacing:.02em;text-transform:none;font-size:12.5px;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--a);min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button,.act button,#showUi{font:inherit;font-size:13px;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chips button:hover,.act button:hover{border-color:var(--a)}
+.chips button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.formula{font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--muted);padding:10px 12px;border-radius:8px;background:var(--card2);border:1px solid var(--line);overflow-wrap:anywhere}
+.formula b{color:var(--fg);font-weight:500}
+.legend{display:grid;gap:4px}
+.grad{height:8px;border-radius:4px;background:linear-gradient(90deg,#1b2a7a,#2f7bff 35%,#4fe0ff 60%,#e9f6ff 80%,#ff6b4a)}
+.gl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin:0;max-width:120ch}
+#showUi{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--card)}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Mecánica de fluidos · Ventilación industrial</div>
+      <h1>Pérdidas en ductos</h1>
+      <p class="lede" id="lede"></p>
+      <div class="sig"><b>Ing. Luis Castillo</b> · Ingeniero Mecánico</div>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Comparación">
+      <button role="tab" id="tElbow" aria-selected="true">Codo curvo vs codo recto</button>
+      <button role="tab" id="tRed" aria-selected="false">Sección constante vs reducción</button>
+    </div>
+  </header>
+
+  <div class="panels" id="panels">
+    <section class="panel">
+      <div class="ph"><span class="badge a">A</span><h2 id="hA"></h2><p id="sA"></p></div>
+      <canvas id="cA" aria-label="Flujo en el ducto A"></canvas>
+      <div class="kpis">
+        <div class="kpi"><span>Velocidad</span><b id="vA"></b></div>
+        <div class="kpi"><span>Presión ventilador</span><b id="pA"></b></div>
+        <div class="kpi"><span>Potencia</span><b id="wA"></b></div>
+        <div class="kpi"><span>Energía anual</span><b id="eA"></b></div>
+      </div>
+      <p class="brk" id="bA"></p>
+    </section>
+    <section class="panel">
+      <div class="ph"><span class="badge b">B</span><h2 id="hB"></h2><p id="sB"></p></div>
+      <canvas id="cB" aria-label="Flujo en el ducto B"></canvas>
+      <div class="kpis">
+        <div class="kpi"><span>Velocidad</span><b id="vB"></b></div>
+        <div class="kpi"><span>Presión ventilador</span><b id="pB"></b></div>
+        <div class="kpi"><span>Potencia</span><b id="wB"></b></div>
+        <div class="kpi"><span>Energía anual</span><b id="eB"></b></div>
+      </div>
+      <p class="brk" id="bB"></p>
+    </section>
+  </div>
+
+  <section class="summary" aria-live="polite">
+    <div class="big" id="ratio">×–</div>
+    <div class="sumtxt"><strong id="sumT"></strong><span id="sumS"></span></div>
+    <div class="energy"><b id="extra">–</b><span>kWh extra por año en B</span></div>
+  </section>
+
+  <section class="controls" id="controls" aria-label="Controles">
+    <div class="group">
+      <div class="glabel"><label for="q">Caudal de aire</label><output id="qO"></output></div>
+      <input id="q" type="range" min="1000" max="12000" step="100" value="5000">
+      <div class="legend"><div class="glabel"><span>Velocidad local</span></div><div class="grad"></div><div class="gl"><span>0 m/s</span><span id="vref"></span></div></div>
+    </div>
+    <div class="group">
+      <div class="glabel"><span>Diámetro del ducto</span><output id="dO"></output></div>
+      <div class="chips" id="dChips"></div>
+      <div class="glabel" id="optLabel"><span id="optName"></span></div>
+      <div class="chips" id="optChips"></div>
+    </div>
+    <div class="group">
+      <div class="glabel"><span>La física</span></div>
+      <div class="formula" id="formula"></div>
+      <div class="act"><button id="bClean">Modo presentación</button></div>
+    </div>
+    <p class="note" id="note" style="grid-column:1/-1"></p>
+  </section>
+</div>
+<button id="showUi" hidden>Mostrar controles</button>
+
+<script>
+// ================== Datos y física ==================
+const RHO=1.2,NU=1.51e-5,EPS=0.00009,ETA=0.6,HOURS=6000,KMIT=1.2,KCON=0.05;
+const KC={'0.75':0.33,'1':0.22,'1.5':0.15,'2':0.13};
+const st={mode:'elbow',Q:5000,D:400,rD:1.5,ratio:0.6};
+const $=id=>document.getElementById(id);
+const fmt=(x,d=0)=>x.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const gauss=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.41;
+const pvOf=v=>RHO*v*v/2;
+function fric(dm,v){const Re=Math.max(v*dm/NU,4000);return 0.25/Math.pow(Math.log10(EPS/(3.7*dm)+5.74/Math.pow(Re,0.9)),2);}
+const vOf=dm=>st.Q/3600/(Math.PI/4*dm*dm);
+
+// ================== Geometría (unidades = diámetro del ducto) ==================
+function Path(){this.segs=[];this.x=0;this.y=0;this.h=0;this.S=0;}
+Path.prototype.line=function(len,d0,d1){const t=[Math.cos(this.h),Math.sin(this.h)];
+  const s={type:'line',p0:[this.x,this.y],t,N:[t[1],-t[0]],len,d0,d1:d1??d0,s0:this.S};
+  this.segs.push(s);this.x+=t[0]*len;this.y+=t[1]*len;this.S+=len;return s;};
+Path.prototype.arc=function(R,sg,d,mit){const t=[Math.cos(this.h),Math.sin(this.h)],N=[t[1],-t[0]];
+  const c=[this.x-sg*R*N[0],this.y-sg*R*N[1]],len=R*Math.PI/2;
+  const s={type:'arc',c,R,h0:this.h,sg,len,d,mit,s0:this.S,p0:[this.x,this.y],t0:t,N0:N};
+  if(mit)s.corner=[this.x+sg*N[0]*d/2+t[0]*(R+d/2),this.y+sg*N[1]*d/2+t[1]*(R+d/2)];
+  this.segs.push(s);this.h+=sg*Math.PI/2;const N1=[Math.sin(this.h),-Math.cos(this.h)];
+  this.x=c[0]+sg*R*N1[0];this.y=c[1]+sg*R*N1[1];this.S+=len;return s;};
+const segD=(s,u)=>s.type==='line'?s.d0+(s.d1-s.d0)*u/s.len:s.d;
+function segPos(s,u,n){const d=segD(s,u);
+  if(s.type==='line')return [s.p0[0]+s.t[0]*u+s.N[0]*n*d/2,s.p0[1]+s.t[1]*u+s.N[1]*n*d/2];
+  const h=s.h0+s.sg*u/s.R,N=[Math.sin(h),-Math.cos(h)];
+  return [s.c[0]+s.sg*s.R*N[0]+N[0]*n*d/2,s.c[1]+s.sg*s.R*N[1]+N[1]*n*d/2];}
+function locate(P,s){for(const g of P.segs){if(s<g.s0+g.len)return [g,s-g.s0];}const g=P.segs[P.segs.length-1];return [g,g.len];}
+const dAt=(P,s)=>{const [g,u]=locate(P,s);return segD(g,u);};
+
+function finish(P){
+  // paredes
+  const L=[],R=[];
+  P.segs.forEach(g=>{
+    if(g.type==='arc'&&g.mit){const outer=g.sg>0?L:R,inner=g.sg>0?R:L;outer.push(g.corner);inner.push([g.c[0],g.c[1]]);return;}
+    const n=Math.max(2,Math.ceil(g.len/0.05));for(let i=0;i<=n;i++){const u=g.len*i/n;L.push(segPos(g,u,1));R.push(segPos(g,u,-1));}});
+  P.wallL=L;P.wallR=R;
+  const all=L.concat(R);P.bb=[Math.min(...all.map(p=>p[0]))-0.8,Math.min(...all.map(p=>p[1]))-0.8,Math.max(...all.map(p=>p[0]))+0.8,Math.max(...all.map(p=>p[1]))+0.8];
+  // bridas en uniones
+  P.flanges=[];P.segs.forEach((g,i)=>{if(g.type==='arc'&&g.mit)return;const prev=P.segs[i-1];if(i>0&&prev.type==='arc'&&prev.mit)return;
+    const a=segPos(g,0,1.18),b=segPos(g,0,-1.18);P.flanges.push([a,b]);});
+  const last=P.segs[P.segs.length-1];P.flanges.push([segPos(last,last.len,1.18),segPos(last,last.len,-1.18)]);
+  // perfil de presión
+  P.cum=s=>P.events.reduce((a,e)=>a+e.amt*clamp((s-e.s0)/Math.max(e.s1-e.s0,1e-6),0,1),0);
+  P.chart=[];for(let i=0;i<=160;i++){const s=P.S*i/160,tot=P.pfan-P.cum(s),dm=dAt(P,s)*st.D/1000;P.chart.push({f:i/160,tot,stat:tot-pvOf(vOf(dm))});}
+}
+
+function buildElbow(kind){
+  const mit=kind==='miter',R=mit?0.5:st.rD,P=new Path();
+  const L1=(7.5-2*R)/2,Lm=4.4-2*R;
+  const s1=P.line(L1,1),a1=P.arc(R,1,1,mit),s2=P.line(Lm,1),a2=P.arc(R,-1,1,mit),s3=P.line(L1,1);
+  const Dm=st.D/1000,v=vOf(Dm),pv=pvOf(v),f=fric(Dm,v),fr=f/Dm*pv*8,K=mit?KMIT:KC[String(st.rD)],fit=2*K*pv;
+  P.pfan=fr+fit+pv;P.vIn=v;P.vOut=v;P.parts={fr,fit,dis:pv};P.K=K;P.pv=pv;
+  P.events=[{s0:s1.s0,s1:s1.s0+s1.len,amt:fr*3/8},{s0:s2.s0,s1:s2.s0+s2.len,amt:fr*2/8},{s0:s3.s0,s1:s3.s0+s3.len,amt:fr*3/8},
+    {s0:a1.s0,s1:a1.s0+a1.len+(mit?1.6:0),amt:K*pv},{s0:a2.s0,s1:a2.s0+a2.len+(mit?1.6:0),amt:K*pv}];
+  P.mitS=[];P.rec=[];P.tags=[];
+  P.tags.push({p:segPos(s1,L1/2,1.75),t:'Ø'+st.D+' · '+fmt(v,1)+' m/s',c:'#8a96b8'});
+  [a1,a2].forEach((a,i)=>{let pt;
+    if(mit){pt=[a.corner[0]+(a.corner[0]-a.c[0])*0.35,a.corner[1]+(a.corner[1]-a.c[1])*0.35];}
+    else{const m=segPos(a,a.len/2,a.sg*1),mm=segPos(a,a.len/2,0);pt=[m[0]+(m[0]-mm[0])*0.9,m[1]+(m[1]-mm[1])*0.9];}
+    P.tags.push({p:pt,t:'K = '+fmt(K,2),c:mit?'#ff6b4a':'#4fe0ff',b:true});});
+  if(mit){
+    s2.sep={inner:-1,L:1.6};s3.sep={inner:1,L:1.6};P.mitS=[a1.s0,a2.s0];
+    [[s2,-1],[s3,1]].forEach(([g,inner])=>P.rec.push({kind:'bubble',g,inner}));
+    [a1,a2].forEach(a=>{const C=[a.corner[0]+(a.c[0]-a.corner[0])*0.3,a.corner[1]+(a.c[1]-a.corner[1])*0.3];
+      const u=[a.c[0]-a.corner[0],a.c[1]-a.corner[1]],perp=[-u[1],u[0]],dir=[a.t0[0]+Math.cos(a.h0+a.sg*Math.PI/2),a.t0[1]+Math.sin(a.h0+a.sg*Math.PI/2)];
+      P.rec.push({kind:'corner',C,r:0.17,dir:Math.sign(perp[0]*dir[0]+perp[1]*dir[1])||1});});
+    P.tags.push({p:segPos(s2,0.75,-1.3),t:'Separación y',c:'#8a96b8',al:'right'},{p:segPos(s2,0.75+0.42,-1.3),t:'recirculación',c:'#8a96b8',al:'right'});
+  }
+  finish(P);return P;
+}
+function buildReduce(r){
+  const P=new Path(),s1=P.line(3.5,1),s2=P.line(1.0,1,r),s3=P.line(7.0,r);
+  const D1=st.D/1000,D2=D1*r,v1=vOf(D1),v2=vOf(D2),p1=pvOf(v1),p2=pvOf(v2);
+  const fr1=fric(D1,v1)/D1*p1*3,fr2=fric(D2,v2)/D2*p2*6,con=r<1?KCON*p2:0;
+  P.pfan=fr1+con+fr2+p2;P.vIn=v1;P.vOut=v2;P.parts={fr:fr1+fr2,fit:con,dis:p2};P.pv=p2;
+  P.events=[{s0:s1.s0,s1:s1.s0+s1.len,amt:fr1},{s0:s2.s0,s1:s2.s0+s2.len,amt:con},{s0:s3.s0,s1:s3.s0+s3.len,amt:fr2}];
+  P.mitS=[];P.rec=[];
+  P.tags=[{p:segPos(s1,1.75,1.6),t:'Ø'+st.D+' · '+fmt(v1,1)+' m/s',c:'#8a96b8'},
+    {p:segPos(s3,3.5,1+0.8/r),t:'Ø'+Math.round(st.D*r)+' · '+fmt(v2,1)+' m/s',c:r<1?'#ff6b4a':'#8a96b8',b:r<1}];
+  if(r<1)P.tags.push({p:segPos(s2,0.5,-1.75),t:'Reducción',c:'#8a96b8'});
+  finish(P);return P;
+}
+
+// ================== Paneles y partículas ==================
+const panels=[{id:'A',cv:$('cA'),acc:'#4fe0ff'},{id:'B',cv:$('cB'),acc:'#ff6b4a'}];
+panels.forEach(p=>p.ctx=p.cv.getContext('2d'));
+let vref=20,vis=0.25;
+function seed(P){const n=st.mode==='elbow'?950:1150;P.ps=[];
+  for(let i=0;i<n;i++){let s;do{s=Math.random()*P.S;}while(Math.random()>Math.pow(dAt(P,s),2));P.ps.push({s,n0:(Math.random()*2-1)*0.95,j:0});}
+  P.rp=[];P.rec.forEach((r,k)=>{const m=r.kind==='bubble'?80:34;for(let i=0;i<m;i++)P.rp.push({k,th:Math.random()*6.283,rho:0.25+Math.random()*0.75});});}
+function build(reseed){
+  const geoms=st.mode==='elbow'?[buildElbow('curve'),buildElbow('miter')]:[buildReduce(1),buildReduce(st.ratio)];
+  panels.forEach((p,i)=>{const old=p.P;p.P=geoms[i];if(reseed||!old||!old.ps)seed(p.P);else{p.P.ps=old.ps;p.P.rp=old.rp;p.P.ps.forEach(q=>{if(q.s>=p.P.S)q.s%=p.P.S;});}});
+  const vmax=Math.max(...geoms.map(g=>Math.max(g.vIn,g.vOut)));
+  vref=vmax*(st.mode==='elbow'?1.6:1.25);vis=Math.min(0.28,7.5/(vmax*1.4));
+  updateUI();
+}
+function prof(n){return 1.12*Math.pow(1-Math.min(Math.abs(n),0.98),1/7);}
+function tI(P,s){let t=0.05;for(const sa of P.mitS){const d=s-sa;if(d>0)t+=0.34*Math.exp(-d/2.4);}return t;}
+function nMap(g,u,n){if(!g.sep||u>=g.sep.L)return [n,0];const b=0.42*Math.sin(Math.PI*u/g.sep.L);
+  return [g.sep.inner<0?(-1+2*b)+(n+1)*(1-b):-1+(n+1)*(1-b),b];}
+
+const NB=14,stops=[[0,[27,42,122]],[0.35,[47,123,255]],[0.6,[79,224,255]],[0.8,[233,246,255]],[1,[255,107,74]]];
+const bucketCol=[];for(let i=0;i<NB;i++){const x=(i+0.5)/NB;let k=1;while(stops[k][0]<x)k++;const [x0,c0]=stops[k-1],[x1,c1]=stops[k],t=(x-x0)/(x1-x0);
+  bucketCol.push('rgb('+c0.map((c,j)=>Math.round(c+(c1[j]-c)*t)).join(',')+')');}
+const colIdx=v=>Math.floor(clamp(v/vref,0,0.999)*NB);
+
+function step(p,dt){const P=p.P,Dm=st.D/1000;
+  for(const q of P.ps){const [g,u]=locate(P,q.s),d=segD(g,u),vm=vOf(d*Dm);
+    const b=g.sep&&u<g.sep.L?0.42*Math.sin(Math.PI*u/g.sep.L):0;
+    q.v=vm*prof(q.n0)/(1-b);
+    q.j+=-q.j*1.5*dt+gauss()*Math.sqrt(dt)*1.6;
+    q.s+=q.v*vis*dt;if(q.s>=P.S){q.s-=P.S;q.n0=(Math.random()*2-1)*0.95;q.j=0;}}
+  for(const r of P.rp){const rec=P.rec[r.k];const vm=vOf(Dm);
+    const w=(rec.kind==='bubble'?0.22:0.3)*vm*vis/(rec.kind==='bubble'?0.55:0.15);r.th+=w*dt*(rec.dir||1);r.v=0.22*vm;}}
+
+function draw(p){
+  const P=p.P,cv=p.cv,ctx=p.ctx,W=cv.clientWidth,H=cv.clientHeight;if(!W||!H)return;
+  const dpr=Math.min(devicePixelRatio||1,2);if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);
+  const chartH=Math.max(78,H*(st.mode==='elbow'?0.27:0.4)),rh=H-chartH;
+  const bb=P.bb,k=Math.min((W-20)/(bb[2]-bb[0]),(rh-12)/(bb[3]-bb[1]));
+  const ox=(W-(bb[2]-bb[0])*k)/2-bb[0]*k,oy=6+(rh-12-(bb[3]-bb[1])*k)/2-bb[1]*k;
+  const X=x=>ox+x*k,Y=y=>oy+y*k;
+  // interior del ducto
+  ctx.beginPath();P.wallL.forEach((q,i)=>i?ctx.lineTo(X(q[0]),Y(q[1])):ctx.moveTo(X(q[0]),Y(q[1])));for(let i=P.wallR.length-1;i>=0;i--)ctx.lineTo(X(P.wallR[i][0]),Y(P.wallR[i][1]));ctx.closePath();
+  ctx.fillStyle='#0b1436';ctx.fill();
+  // partículas
+  ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineWidth=Math.max(1.2,k*0.022);
+  const paths=Array.from({length:NB},()=>new Path2D());const tailT=0.07;
+  for(const q of P.ps){const [g,u]=locate(P,q.s);const nn=clamp(q.n0+q.j*tI(P,q.s),-0.96,0.96);const [n2]=nMap(g,u,nn);const a=segPos(g,u,n2);
+    const sb=Math.max(0,q.s-(q.v||0)*vis*tailT);const [g2,u2]=locate(P,sb);const [n3]=nMap(g2,u2,nn);const b=segPos(g2,u2,n3);
+    const path=paths[colIdx(q.v||0)];path.moveTo(X(b[0]),Y(b[1]));path.lineTo(X(a[0]),Y(a[1]));}
+  for(const r of P.rp){const rec=P.rec[r.k];let a,b;
+    if(rec.kind==='bubble'){const g=rec.g,f=th=>{const al=0.75+0.68*r.rho*Math.cos(th),ln=rec.inner*(0.6+0.34*r.rho*Math.sin(th));return segPos(g,al,ln);};a=f(r.th);b=f(r.th-0.22);}
+    else{const f=th=>[rec.C[0]+rec.r*r.rho*Math.cos(th),rec.C[1]+rec.r*r.rho*Math.sin(th)];a=f(r.th);b=f(r.th-0.5*(rec.dir||1));}
+    const path=paths[colIdx(r.v||0)];path.moveTo(X(b[0]),Y(b[1]));path.lineTo(X(a[0]),Y(a[1]));}
+  paths.forEach((pa,i)=>{ctx.strokeStyle=bucketCol[i];ctx.globalAlpha=0.85;ctx.stroke(pa);});ctx.globalAlpha=1;
+  ctx.globalCompositeOperation='source-over';
+  // paredes
+  ctx.lineJoin='miter';ctx.lineWidth=2;ctx.strokeStyle='#5d7fd6';ctx.shadowColor='#2f6bff';ctx.shadowBlur=10;
+  [P.wallL,P.wallR].forEach(w=>{ctx.beginPath();w.forEach((q,i)=>i?ctx.lineTo(X(q[0]),Y(q[1])):ctx.moveTo(X(q[0]),Y(q[1])));ctx.stroke();});
+  ctx.shadowBlur=0;ctx.lineWidth=2.5;ctx.strokeStyle='#8fa6e6';
+  P.flanges.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(X(a[0]),Y(a[1]));ctx.lineTo(X(b[0]),Y(b[1]));ctx.stroke();});
+  P.segs.forEach(g=>{if(g.type==='arc'&&g.mit){ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.strokeStyle='#5d7fd6';ctx.beginPath();ctx.moveTo(X(g.c[0]),Y(g.c[1]));ctx.lineTo(X(g.corner[0]),Y(g.corner[1]));ctx.stroke();ctx.setLineDash([]);}});
+  // etiquetas
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  P.tags.forEach(t=>{ctx.font=(t.b?'600 ':'500 ')+(t.b?12.5:11.5)+'px "JetBrains Mono", ui-monospace, monospace';ctx.fillStyle=t.c;ctx.textAlign=t.al||'center';ctx.fillText(t.t,X(t.p[0]),Y(t.p[1]));});
+  // perfil de presión
+  drawChart(p,ctx,W,rh,chartH);
+}
+function drawChart(p,ctx,W,y0,h){
+  const P=p.P,L=46,R=12,T=y0+14,B=y0+h-20,w=W-L-R,ht=B-T;
+  const pmax=Math.max(...panels.map(q=>q.P.pfan))*1.1;
+  const Yp=v=>B-v/pmax*ht,Xf=f=>L+f*w;
+  ctx.font='500 10.5px "JetBrains Mono", ui-monospace, monospace';ctx.textBaseline='middle';
+  const stp=niceStep(pmax/3);ctx.strokeStyle='#1a2550';ctx.lineWidth=1;
+  for(let v=0;v<=pmax;v+=stp){ctx.beginPath();ctx.moveTo(L,Yp(v));ctx.lineTo(L+w,Yp(v));ctx.stroke();ctx.fillStyle='#8a96b8';ctx.textAlign='right';ctx.fillText(fmt(v),L-6,Yp(v));}
+  ctx.textAlign='left';ctx.fillStyle='#8a96b8';ctx.fillText(st.mode==='elbow'?'Presión total (Pa) a lo largo del recorrido':'Presión total y estática (Pa) a lo largo del ducto',L,y0+3);
+  ctx.textAlign='right';ctx.fillText('salida →',L+w,B+12);
+  const g=ctx.createLinearGradient(0,T,0,B);g.addColorStop(0,p.acc+'55');g.addColorStop(1,p.acc+'00');
+  ctx.beginPath();ctx.moveTo(Xf(0),B);P.chart.forEach(c=>ctx.lineTo(Xf(c.f),Yp(c.tot)));ctx.lineTo(Xf(1),B);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();P.chart.forEach((c,i)=>i?ctx.lineTo(Xf(c.f),Yp(c.tot)):ctx.moveTo(Xf(c.f),Yp(c.tot)));ctx.strokeStyle=p.acc;ctx.lineWidth=2;ctx.stroke();
+  if(st.mode!=='elbow'){ctx.setLineDash([5,4]);ctx.beginPath();P.chart.forEach((c,i)=>i?ctx.lineTo(Xf(c.f),Yp(c.stat)):ctx.moveTo(Xf(c.f),Yp(c.stat)));ctx.strokeStyle='#c9d2ee';ctx.lineWidth=1.3;ctx.stroke();ctx.setLineDash([]);}
+  ctx.fillStyle=p.acc;ctx.beginPath();ctx.arc(Xf(0),Yp(P.pfan),3.5,0,7);ctx.fill();
+  ctx.textAlign='left';ctx.font='600 11.5px "JetBrains Mono", ui-monospace, monospace';ctx.fillText(fmt(P.pfan)+' Pa',Xf(0)+8,Math.max(T+4,Yp(P.pfan)-9));
+}
+function niceStep(x){const e=Math.pow(10,Math.floor(Math.log10(x))),m=x/e;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*e;}
+
+// ================== Interfaz ==================
+const TXT={
+  elbow:{lede:'Mismo caudal y mismo diámetro. Lo único que cambia es la forma del codo.',
+    hA:()=>'Codo curvo · r/D '+fmt(st.rD,st.rD%1?2:0).replace(/,?0+$/,''),sA:()=>'Dos codos de 90° de radio amplio. El flujo sigue la curva.',
+    hB:()=>'Codo recto a inglete',sB:()=>'Dos codos de 90° en ángulo vivo. El flujo se despega y recircula.',
+    formula:()=>'ΔP codo = <b>K</b> · ρv²/2<br>ΔP fricción = f · (L/D) · ρv²/2<br>P ventilador = fricción + accesorios + descarga',
+    opt:'Radio del codo curvo (r/D)',
+    note:'Coeficientes K según tablas ASHRAE para ductos circulares (curvo liso según r/D; inglete 90° sin álabes K 1,2). Fricción por Darcy-Weisbach con chapa galvanizada (ε 0,09 mm) y 8 m de tramos rectos. Aire a 20 °C con descarga libre. Energía con rendimiento de ventilador 60 % y 6.000 h/año. Esquema no a escala.'},
+  red:{lede:'Mismo caudal. Si el área se achica, la velocidad sube y la presión se gasta en el camino.',
+    hA:()=>'Sección constante · Ø'+st.D,sA:()=>'El aire mantiene la misma velocidad en todo el recorrido.',
+    hB:()=>'Reducción Ø'+st.D+' → Ø'+Math.round(st.D*st.ratio),sB:()=>'El mismo caudal pasa por menos área: la velocidad aumenta con el cuadrado de la relación de diámetros.',
+    formula:()=>'Continuidad: Q = v₁·A₁ = v₂·A₂<br>v₂ = v₁ · (D₁/D₂)² = v₁ · <b>×'+fmt(1/(st.ratio*st.ratio),2)+'</b><br>Pérdida por fricción ∝ v²/D',
+    opt:'Diámetro reducido',
+    note:'Fricción por Darcy-Weisbach con chapa galvanizada (ε 0,09 mm): 3 m antes de la reducción y 6 m después. Reducción cónica con K ≈ 0,05 sobre la presión dinámica de salida. Aire a 20 °C con descarga libre: la presión dinámica de salida también la paga el ventilador. La línea punteada es la presión estática: cae de golpe en la reducción porque se transforma en velocidad. Energía con rendimiento 60 % y 6.000 h/año. Esquema no a escala.'}};
+function chipSet(host,items,cur,on){host.innerHTML='';items.forEach(it=>{const b=document.createElement('button');b.type='button';b.textContent=it.l;b.setAttribute('aria-pressed',it.v===cur);b.addEventListener('click',()=>on(it.v));host.appendChild(b);});}
+function renderChips(){
+  chipSet($('dChips'),[300,400,500].map(v=>({v,l:'Ø'+v})),st.D,v=>{st.D=v;build(false);renderChips();});
+  $('dO').textContent='Ø'+st.D+' mm';
+  const T=TXT[st.mode];$('optName').textContent=T.opt;
+  if(st.mode==='elbow')chipSet($('optChips'),[0.75,1,1.5,2].map(v=>({v,l:fmt(v,v%1?2:0).replace(/(,\d)0$/,'$1')+' · K '+fmt(KC[String(v)],2)})),st.rD,v=>{st.rD=v;build(true);renderChips();});
+  else chipSet($('optChips'),[0.75,0.6,0.5].map(v=>({v,l:'Ø'+Math.round(st.D*v)})),st.ratio,v=>{st.ratio=v;build(true);renderChips();});
+}
+function updateUI(){
+  const T=TXT[st.mode],[A,B]=panels.map(p=>p.P);
+  $('lede').textContent=T.lede;$('hA').textContent=T.hA();$('sA').textContent=T.sA();$('hB').textContent=T.hB();$('sB').textContent=T.sB();
+  $('formula').innerHTML=T.formula();$('note').textContent=T.note;
+  $('qO').textContent=fmt(st.Q)+' m³/h';$('vref').textContent=fmt(vref,0)+' m/s';
+  const kw=P=>st.Q/3600*P.pfan/ETA/1000;
+  [['A',A],['B',B]].forEach(([k,P])=>{
+    $('v'+k).textContent=Math.abs(P.vIn-P.vOut)<0.05?fmt(P.vIn,1)+' m/s':fmt(P.vIn,1)+' → '+fmt(P.vOut,1)+' m/s';
+    $('p'+k).textContent=fmt(P.pfan)+' Pa';$('w'+k).textContent=fmt(kw(P),2)+' kW';$('e'+k).textContent=fmt(kw(P)*HOURS)+' kWh';
+    $('b'+k).textContent='Fricción '+fmt(P.parts.fr)+' Pa · '+(st.mode==='elbow'?'Codos ':'Reducción ')+fmt(P.parts.fit)+' Pa · Descarga '+fmt(P.parts.dis)+' Pa';});
+  const r=B.pfan/A.pfan;$('ratio').textContent='×'+fmt(r,1);
+  $('extra').textContent='+'+fmt((kw(B)-kw(A))*HOURS);
+  if(st.mode==='elbow'){$('sumT').textContent='más presión en el ventilador con codos rectos';
+    $('sumS').textContent='Cada codo recto pierde '+fmt(KMIT*A.pv)+' Pa contra '+fmt(A.K*A.pv)+' Pa del curvo. La pérdida crece con el cuadrado de la velocidad: duplicar el caudal la multiplica por cuatro.';}
+  else{$('sumT').textContent='más presión en el ventilador con la reducción';
+    $('sumS').textContent='La velocidad sube ×'+fmt(B.vOut/B.vIn,2)+' y la presión dinámica ×'+fmt(Math.pow(B.vOut/B.vIn,2),1)+'. Achicar el ducto ahorra chapa, pero el costo se paga en energía todos los días.';}
+}
+function setMode(m){st.mode=m;$('tElbow').setAttribute('aria-selected',m==='elbow');$('tRed').setAttribute('aria-selected',m!=='elbow');$('panels').classList.toggle('stack',m!=='elbow');renderChips();build(true);}
+$('tElbow').addEventListener('click',()=>setMode('elbow'));$('tRed').addEventListener('click',()=>setMode('red'));
+$('q').addEventListener('input',e=>{st.Q=+e.target.value;build(false);});
+function setClean(on){$('controls').hidden=on;$('showUi').hidden=!on;}
+$('bClean').addEventListener('click',()=>setClean(true));$('showUi').addEventListener('click',()=>setClean(false));
+addEventListener('keydown',e=>{if((e.key==='h'||e.key==='H')&&!(e.target instanceof HTMLInputElement))setClean(!$('controls').hidden);});
+
+setMode('elbow');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last=performance.now();
+(function loop(t){requestAnimationFrame(loop);const dt=Math.min((t-last)/1000,0.05)*(reduce?0.3:1);last=t;
+  panels.forEach(p=>{step(p,dt);draw(p);});})(last);
+</script>
+
+</body></html>

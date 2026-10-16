@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Luis Castillo · Simulaciones</title>
+<meta name="description" content="Simulaciones interactivas de mecánica de fluidos y equipos industriales, por el Ing. Luis Castillo.">
+<meta property="og:title" content="Luis Castillo · Simulaciones de ingeniería">
+<meta property="og:description" content="Simulaciones interactivas de mecánica de fluidos y equipos industriales. Abrilas en el navegador y jugá con las variables.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: cabecera con nombre y presentación; grilla de tarjetas, una por simulación; pie. Misma serie visual oscura que las simulaciones. */
+:root{
+  color-scheme:dark;
+  --bg:#060a17; --card:#0a1029; --card2:#0e1636; --line:#1f2c55; --fg:#e9eefb; --muted:#8a96b8;
+  --a:#4fe0ff; --b:#ff6b4a; --amber:#ffc65a;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --sans:"Instrument Sans",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:clamp(32px,7vw,80px) 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:clamp(32px,5vw,56px)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--a)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(38px,7vw,84px);line-height:.98;letter-spacing:-.02em;margin:12px 0 16px;text-wrap:balance}
+h1 span{color:var(--muted);font-weight:500}
+.lede{max-width:58ch;color:var(--muted);font-size:clamp(15px,1.6vw,18px);margin:0}
+.lede b{color:var(--fg);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}
+.card{display:grid;grid-template-rows:auto 1fr;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--a);transform:translateY(-3px)}
+.card:focus-visible{outline:2px solid var(--a);outline-offset:3px}
+.thumb{aspect-ratio:16/10;background:#070c20;border-bottom:1px solid var(--line);display:block;width:100%;max-width:100%}
+.body{padding:18px 20px 20px;display:grid;gap:10px;align-content:start}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+h2{font-family:var(--display);font-weight:600;font-size:21px;line-height:1.15;margin:0;text-wrap:balance}
+.body p{margin:0;color:var(--muted);font-size:14.5px}
+.go{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--a);margin-top:4px}
+.card:hover .go{text-decoration:underline}
+footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:20px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Simulaciones de ingeniería</div>
+    <h1>Luis Castillo <span>· Ing. Mecánico</span></h1>
+    <p class="lede">Simulaciones interactivas para <b>ver</b> lo que en las ecuaciones cuesta imaginar: cómo se comporta un fluido, dónde se pierde la energía y cómo funciona un equipo por dentro. Se abren en el navegador y podés cambiar las variables.</p>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="numero-de-reynolds.html">
+      <svg class="thumb" viewBox="0 0 320 200" role="img" aria-label="Flujo en un tubo pasando de laminar a turbulento">
+        <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#4fe0ff"/><stop offset=".55" stop-color="#ffc65a"/><stop offset="1" stop-color="#ff6b4a"/></linearGradient></defs>
+        <rect x="20" y="62" width="280" height="76" rx="38" fill="none" stroke="#2a3a6e" stroke-width="2"/>
+        <g fill="none" stroke="url(#g1)" stroke-width="2" stroke-linecap="round">
+          <path d="M40 82 H140 C165 82 170 74 190 80 S220 92 240 76 S275 84 290 88"/>
+          <path d="M40 100 H150 C172 100 178 90 198 104 S230 88 250 108 S278 94 290 102"/>
+          <path d="M40 118 H145 C168 118 176 126 196 112 S228 128 246 114 S276 124 290 116"/>
+        </g>
+        <path d="M60 100 H150 C175 100 180 108 205 96 S240 112 262 98" fill="none" stroke="#ff4fa8" stroke-width="3" stroke-linecap="round"/>
+        <text x="40" y="168" fill="#4fe0ff" font-family="JetBrains Mono,monospace" font-size="11">LAMINAR</text>
+        <text x="290" y="168" fill="#ff6b4a" font-family="JetBrains Mono,monospace" font-size="11" text-anchor="end">TURBULENTO</text>
+      </svg>
+      <div class="body">
+        <div class="tags"><span class="tag">Mecánica de fluidos</span><span class="tag">3D</span></div>
+        <h2>Número de Reynolds</h2>
+        <p>El experimento de 1883 en una cañería 3D. Cambiá el fluido, la velocidad y el diámetro, y mirá cómo la tinta pasa de un hilo recto a remolinos.</p>
+        <span class="go">Abrir simulación →</span>
+      </div>
+    </a>
+
+    <a class="card" href="perdidas-en-ductos.html">
+      <svg class="thumb" viewBox="0 0 320 200" role="img" aria-label="Ducto con codo curvo y codo a inglete">
+        <g fill="none" stroke-linejoin="round">
+          <path d="M24 70 H90 Q120 70 120 100 V150" stroke="#5d7fd6" stroke-width="2"/>
+          <path d="M24 100 H80 Q90 100 90 110 V150" stroke="#5d7fd6" stroke-width="2"/>
+          <path d="M30 85 H95 Q105 85 105 100 V145" stroke="#4fe0ff" stroke-width="2.5" stroke-dasharray="6 6"/>
+          <path d="M180 70 H280 V150" stroke="#5d7fd6" stroke-width="2"/>
+          <path d="M180 100 H250 V150" stroke="#5d7fd6" stroke-width="2"/>
+          <path d="M186 85 H265 V145" stroke="#ff6b4a" stroke-width="2.5" stroke-dasharray="6 6"/>
+          <circle cx="258" cy="92" r="9" stroke="#ff6b4a" stroke-width="1.5"/>
+        </g>
+        <text x="70" y="178" fill="#4fe0ff" font-family="JetBrains Mono,monospace" font-size="11" text-anchor="middle">K 0,15</text>
+        <text x="230" y="178" fill="#ff6b4a" font-family="JetBrains Mono,monospace" font-size="11" text-anchor="middle">K 1,20</text>
+      </svg>
+      <div class="body">
+        <div class="tags"><span class="tag">Ventilación industrial</span><span class="tag">Energía</span></div>
+        <h2>Pérdidas en ductos</h2>
+        <p>Codo curvo contra codo a inglete, y sección constante contra reducción. Cuánta presión, potencia y energía al año se pierde en cada caso.</p>
+        <span class="go">Abrir simulación →</span>
+      </div>
+    </a>
+
+    <a class="card" href="skid-lact.html">
+      <svg class="thumb" viewBox="0 0 320 200" role="img" aria-label="Esquema de un skid de medición de crudo">
+        <rect x="30" y="150" width="260" height="10" fill="#2f57c4"/>
+        <g fill="none" stroke="#9aa6b2" stroke-width="5" stroke-linecap="round">
+          <path d="M20 110 H110 V70 H230 V110 H300"/>
+        </g>
+        <rect x="140" y="56" width="60" height="28" rx="6" fill="#0e1636" stroke="#4fe0ff" stroke-width="2"/>
+        <text x="170" y="74" fill="#4fe0ff" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">CORIOLIS</text>
+        <rect x="56" y="98" width="26" height="24" rx="4" fill="#0e1636" stroke="#ffc65a" stroke-width="2"/>
+        <rect x="250" y="98" width="26" height="24" rx="4" fill="#0e1636" stroke="#ffc65a" stroke-width="2"/>
+        <g stroke="#2f57c4" stroke-width="4"><line x1="110" y1="150" x2="110" y2="114"/><line x1="230" y1="150" x2="230" y2="114"/></g>
+        <text x="160" y="185" fill="#8a96b8" font-family="JetBrains Mono,monospace" font-size="11" text-anchor="middle">1.500 m³/d · 3"</text>
+      </svg>
+      <div class="body">
+        <div class="tags"><span class="tag">Oil &amp; Gas</span><span class="tag">3D</span></div>
+        <h2>Skid LACT 1.500 m³/d</h2>
+        <p>Modelo 3D de un skid de transferencia de custodia de crudo con medidor Coriolis de 3". Recorré el equipo y sus componentes.</p>
+        <span class="go">Abrir simulación →</span>
+      </div>
+    </a>
+  </main>
+
+  <footer><span>Ing. Luis Mario Castillo · Ingeniero Mecánico</span><span>Buenos Aires, Argentina</span></footer>
+</div>
+</body>
+</html>

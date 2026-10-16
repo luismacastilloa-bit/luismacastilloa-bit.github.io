@@ -1,0 +1,306 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Número de Reynolds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: escena 3D a pantalla completa; título arriba a la izquierda, lectura de Re arriba a la derecha, panel de control de vidrio abajo a la izquierda. Look oscuro único, pensado para video. */
+:root{
+  color-scheme:dark;
+  --bg:#060a17; --bg2:#0c1430; --panel:#0b1330c9; --line:#223058; --fg:#e9eefb; --muted:#8a96b8;
+  --lam:#4fe0ff; --tra:#ffc65a; --tur:#ff6b4a; --dye:#ff4fa8; --regc:#4fe0ff;
+  --display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --sans:"Instrument Sans",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);overflow:hidden}
+#stage{position:fixed;inset:0}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 70% at 50% 48%,transparent 55%,var(--bg) 100%)}
+#labels{position:fixed;inset:0;pointer-events:none}
+.lbl{position:absolute;transform:translate(-50%,-100%);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.lbl::after{content:"";display:block;width:1px;height:14px;background:var(--line);margin:4px auto 0}
+
+.hud{position:fixed;inset:0;pointer-events:none;display:grid;grid-template-rows:auto 1fr auto;padding-inline:clamp(16px,3vw,40px);padding-block:clamp(16px,3vh,32px);gap:16px}
+.hud > *{pointer-events:auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;pointer-events:none}
+.top > *{pointer-events:auto}
+.brand{max-width:470px;display:grid;gap:10px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--lam)}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,3.3vw,46px);line-height:1.02;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.lede{margin:0;color:var(--muted);font-size:15px;line-height:1.5;max-width:44ch}
+.sig{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sig b{color:var(--fg);font-weight:500}
+
+.readout{display:grid;justify-items:end;gap:8px;min-width:0;text-align:right}
+.re-row{display:flex;align-items:baseline;gap:14px}
+.re-sym{font-family:var(--display);font-size:22px;color:var(--muted)}
+.re-val{font-family:var(--display);font-weight:700;font-size:clamp(44px,6.4vw,92px);line-height:1;color:var(--regc);font-variant-numeric:tabular-nums;text-shadow:0 0 28px color-mix(in srgb,var(--regc) 45%,transparent);transition:color .4s}
+.chip{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:999px;border:1px solid var(--regc);color:var(--regc);transition:color .4s,border-color .4s}
+.gauge-wrap{width:min(320px,80vw);display:grid;gap:6px}
+.gauge{position:relative;height:8px;border-radius:4px;overflow:visible;display:flex}
+.zone{height:100%}
+.z0{background:var(--lam);border-radius:4px 0 0 4px;opacity:.75}
+.z1{background:var(--tra);opacity:.75}
+.z2{background:var(--tur);border-radius:0 4px 4px 0;opacity:.75}
+.needle{position:absolute;top:-5px;width:3px;height:18px;border-radius:2px;background:var(--fg);box-shadow:0 0 10px var(--fg);transform:translateX(-50%);transition:left .25s}
+.ticks{position:relative;height:14px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.ticks span{position:absolute;transform:translateX(-50%)}
+.ticks span:first-child{transform:none}.ticks span:last-child{transform:translateX(-100%)}
+.regdesc{margin:0;max-width:36ch;font-size:13.5px;line-height:1.5;color:var(--muted);text-wrap:pretty}
+
+.panel{align-self:end;width:min(620px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:grid;gap:14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);max-height:46vh;overflow:auto}
+.group{display:grid;gap:8px;min-width:0}
+.glabel{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.glabel output{color:var(--fg);letter-spacing:.02em;text-transform:none;font-size:12.5px;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button,.act button,#showUi{font:inherit;font-size:13px;color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;transition:border-color .2s,background .2s}
+.chips button:hover,.act button:hover{border-color:var(--lam)}
+.chips button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.act button[aria-pressed=true]{border-color:var(--lam);color:var(--lam)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--lam);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--lam);min-width:0}
+.formula{font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--muted);padding:10px 12px;border-radius:8px;background:var(--bg2);border:1px solid var(--line);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.formula b{color:var(--regc);font-weight:500}
+.act{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.note{font-size:11.5px;color:var(--muted);line-height:1.45;margin:0}
+#showUi{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--panel);backdrop-filter:blur(10px)}
+
+@media (max-width:720px){
+  .readout{justify-items:start;text-align:left}
+  .lede{font-size:13.5px}
+  .regdesc{display:none}
+  .panel{max-height:40vh;padding:14px}
+}
+@media (prefers-reduced-motion: reduce){.needle,.re-val,.chip{transition:none}}
+</style>
+
+<div id="stage"></div>
+<div class="vignette"></div>
+<div id="labels"></div>
+
+<div class="hud">
+  <div class="top">
+    <div class="brand">
+      <div class="eyebrow">Mecánica de fluidos · Experimento de Reynolds, 1883</div>
+      <h1>Número de Reynolds</h1>
+      <p class="lede">Inercia contra viscosidad. Un solo número predice si un fluido avanza en capas ordenadas o en remolinos.</p>
+      <div class="sig"><b>Ing. Luis Castillo</b> · Ingeniero Mecánico</div>
+    </div>
+    <div class="readout" aria-live="polite">
+      <div class="re-row"><span class="re-sym">Re</span><span class="re-val" id="reVal">–</span></div>
+      <span class="chip" id="regime">Laminar</span>
+      <div class="gauge-wrap">
+        <div class="gauge"><div class="zone z0" id="z0"></div><div class="zone z1" id="z1"></div><div class="zone z2" id="z2"></div><div class="needle" id="needle"></div></div>
+        <div class="ticks"><span style="left:0">10</span><span style="left:20%">10²</span><span style="left:40%">10³</span><span style="left:60%">10⁴</span><span style="left:80%">10⁵</span><span style="left:100%">10⁶</span></div>
+      </div>
+      <p class="regdesc" id="regDesc"></p>
+    </div>
+  </div>
+  <div></div>
+  <section class="panel" id="panel" aria-label="Controles">
+    <div class="group"><div class="glabel"><span>Fluido</span><output id="fluidProps"></output></div><div class="chips" id="fluids"></div></div>
+    <div class="group"><div class="glabel"><label for="vel">Velocidad media</label><output id="velOut"></output></div><input id="vel" type="range" min="0" max="1000" step="1" value="303"></div>
+    <div class="group"><div class="glabel"><span>Cañería · Sch 40</span><output id="pipeOut"></output></div><div class="chips" id="pipes"></div></div>
+    <div class="formula" id="formula"></div>
+    <div class="act">
+      <button id="bSweep" aria-pressed="false">Recorrido automático</button>
+      <button id="bDye" aria-pressed="true">Tinta</button>
+      <button id="bClean">Modo presentación</button>
+    </div>
+    <p class="note">Límites habituales en cañerías: laminar hasta 2.300 y turbulento desde 4.000. La transición real depende de la rugosidad y de las perturbaciones a la entrada. La velocidad de la animación está escalada para poder verla.</p>
+  </section>
+</div>
+<button id="showUi" hidden>Mostrar controles</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- Datos físicos ----------
+const FLUIDS=[
+  {name:'Agua',cond:'20 °C',rho:998,mu:1.002e-3},
+  {name:'Leche entera',cond:'20 °C',rho:1030,mu:2.1e-3},
+  {name:'Aceite ISO VG 46',cond:'40 °C',rho:861,mu:0.0396},
+  {name:'Glicerina',cond:'20 °C',rho:1261,mu:1.41},
+  {name:'Aire',cond:'20 °C',rho:1.204,mu:1.825e-5}
+];
+const PIPES=[{n:'½″',d:0.0158},{n:'1″',d:0.0266},{n:'2″',d:0.0525},{n:'4″',d:0.1023}];
+let fi=0, pi=1, vt=303;
+const vOf=t=>0.005*Math.pow(10,t/1000*3.3);
+
+// ---------- Escena ----------
+const BG=new THREE.Color(css('--bg'));
+const scene=new THREE.Scene();scene.background=BG;scene.fog=new THREE.FogExp2(BG,0.03);
+const camera=new THREE.PerspectiveCamera(36,innerWidth/innerHeight,0.1,200);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);
+$('stage').appendChild(renderer.domElement);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=5;controls.maxDistance=24;
+function fitCam(){const a=innerWidth/innerHeight;camera.aspect=a;
+  if(a<1){camera.fov=48;camera.position.set(10.5,3.6,8.5);controls.target.set(0.6,-0.9,0);}
+  else{camera.fov=36;camera.position.set(1.8,2.3,11.2);controls.target.set(0.4,-0.35,0);}
+  camera.updateProjectionMatrix();}
+fitCam();
+scene.add(new THREE.AmbientLight(0x6a78a8,0.6));
+const key=new THREE.DirectionalLight(0xbfd8ff,0.9);key.position.set(3,6,8);scene.add(key);
+
+const LEN=14,X0=-7,X1=7,NX=-6.2,PX=3.2;
+
+// Tubo de vidrio con brillo de borde (fresnel)
+const glass=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,
+  uniforms:{uColor:{value:new THREE.Color(css('--lam'))}},
+  vertexShader:`varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`uniform vec3 uColor;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),2.6);gl_FragColor=vec4(uColor*(0.04+f*0.9),1.);}`});
+const tube=new THREE.Mesh(new THREE.CylinderGeometry(1,1,LEN,128,1,true),glass);tube.rotation.z=Math.PI/2;scene.add(tube);
+// Bridas
+const metal=new THREE.MeshStandardMaterial({color:0x1a2346,metalness:0.85,roughness:0.32});
+[X0,X1].forEach(x=>{const f=new THREE.Mesh(new THREE.CylinderGeometry(1.22,1.22,0.2,96,1,true),metal);f.rotation.z=Math.PI/2;f.position.x=x;scene.add(f);
+  const r=new THREE.Mesh(new THREE.RingGeometry(1,1.22,96),metal);r.rotation.y=Math.PI/2;r.position.x=x;scene.add(r);});
+// Anillos de referencia
+const ringMat=new THREE.MeshBasicMaterial({color:0x2a3a6e,transparent:true,opacity:0.8});
+[-3.5,0].forEach(x=>{const t=new THREE.Mesh(new THREE.TorusGeometry(1.01,0.006,8,128),ringMat);t.rotation.y=Math.PI/2;t.position.x=x;scene.add(t);});
+const sliceMat=new THREE.MeshBasicMaterial({color:new THREE.Color(css('--lam')),transparent:true,opacity:0.9});
+const slice=new THREE.Mesh(new THREE.TorusGeometry(1.012,0.01,8,128),sliceMat);slice.rotation.y=Math.PI/2;slice.position.x=PX;scene.add(slice);
+// Inyector de tinta (aguja de Reynolds)
+const needleMat=new THREE.MeshStandardMaterial({color:0xaab6d6,metalness:0.9,roughness:0.25});
+const nv=new THREE.Mesh(new THREE.CylinderGeometry(0.028,0.028,2.35,16),needleMat);nv.position.set(NX-0.14,1.17,0);scene.add(nv);
+const nh=new THREE.Mesh(new THREE.CylinderGeometry(0.022,0.022,0.16,16),needleMat);nh.rotation.z=Math.PI/2;nh.position.set(NX-0.07,0,0);scene.add(nh);
+const res=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.46,32),new THREE.MeshBasicMaterial({color:new THREE.Color(css('--dye')),transparent:true,opacity:0.85}));res.position.set(NX-0.14,2.55,0);scene.add(res);
+// Piso
+const grid=new THREE.GridHelper(60,60,0x16204a,0x16204a);grid.position.y=-2.4;scene.add(grid);
+
+// ---------- Partículas ----------
+const spr=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');const gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(0.4,'rgba(255,255,255,.7)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+const NT=5200,ND=1500;
+const tP=new Float32Array(NT*3),tC=new Float32Array(NT*3),dP=new Float32Array(ND*3);
+for(let i=0;i<NT;i++){const r=Math.sqrt(Math.random())*0.975,a=Math.random()*Math.PI*2;tP[i*3]=X0+Math.random()*LEN;tP[i*3+1]=r*Math.cos(a);tP[i*3+2]=r*Math.sin(a);}
+const gauss=()=>(Math.random()+Math.random()+Math.random()-1.5)*1.41;
+for(let i=0;i<ND;i++){dP[i*3]=NX+Math.random()*(X1-NX);dP[i*3+1]=gauss()*0.008;dP[i*3+2]=gauss()*0.008;}
+const tGeo=new THREE.BufferGeometry();tGeo.setAttribute('position',new THREE.BufferAttribute(tP,3));tGeo.setAttribute('color',new THREE.BufferAttribute(tC,3));
+const tracers=new THREE.Points(tGeo,new THREE.PointsMaterial({size:0.045,map:spr,vertexColors:true,transparent:true,opacity:0.8,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(tracers);
+const dGeo=new THREE.BufferGeometry();dGeo.setAttribute('position',new THREE.BufferAttribute(dP,3));
+const dye=new THREE.Points(dGeo,new THREE.PointsMaterial({size:0.075,map:spr,color:new THREE.Color(css('--dye')),transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(dye);
+
+// Perfil de velocidades en la sección PX
+const NPr=40,NAr=10;const prPos=new Float32Array((NPr*2+NAr*2+2)*3);
+const prGeo=new THREE.BufferGeometry();prGeo.setAttribute('position',new THREE.BufferAttribute(prPos,3));
+scene.add(new THREE.LineSegments(prGeo,new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:0.9})));
+
+// ---------- Posprocesado (bloom) ----------
+let composer=null,bloom=null;
+if(THREE.EffectComposer&&THREE.UnrealBloomPass&&THREE.RenderPass){
+  composer=new THREE.EffectComposer(renderer);composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);
+  composer.addPass(new THREE.RenderPass(scene,camera));
+  bloom=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.75,0.55,0.28);composer.addPass(bloom);}
+
+// ---------- Física de la visualización ----------
+let Re=0,regime=0,gamma=0,n=7,ratio=0.817,Uvis=1,amp=0.6,time=0;
+const puffs=[];
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+function tauAt(x){if(regime===0)return 0;if(regime===2)return 1;let m=0;
+  for(const p of puffs){const head=p.x,tail=p.x-p.len;if(x>tail-0.7&&x<head+0.7){const w=Math.min(sstep(tail-0.7,tail+0.7,x),1-sstep(head-0.7,head+0.7,x));if(w>m)m=w;}}
+  return m;}
+function profile(r,tau){const uL=2*(1-r*r);const uT=Math.pow(Math.max(1-r,0),1/n)/ratio;return uL+(uT-uL)*tau;}
+
+function recompute(){
+  const f=FLUIDS[fi],d=PIPES[pi].d,v=vOf(vt);
+  Re=f.rho*v*d/f.mu;
+  regime=Re<2300?0:Re<4000?1:2;gamma=clamp((Re-2300)/1700,0,1);
+  n=clamp(-1.7+1.8*Math.log10(Math.max(Re,4000)),6,10);ratio=2*n*n/((n+1)*(2*n+1));
+  amp=regime===2?0.55+0.45*clamp(Math.log10(Re/4000)/2,0,1):0.6;
+  Uvis=0.55+2.0*clamp((Math.log10(v)+2.3)/3.3,0,1);
+  updateUI(f,d,v);
+}
+
+function stepParticles(dt){
+  time+=dt;const sq=Math.sqrt(dt),mix=0.5+0.5*Uvis;
+  // Ráfagas turbulentas en transición
+  if(regime===1){if(Math.random()<dt*(0.35+1.6*gamma))puffs.push({x:X0,len:1.2+Math.random()*1.5+gamma*3});}
+  for(let k=puffs.length-1;k>=0;k--){puffs[k].x+=Uvis*dt;if(puffs[k].x-puffs[k].len>X1+1||regime!==1)puffs.splice(k,1);}
+  const adv=(P,i,isDye)=>{let x=P[i],y=P[i+1],z=P[i+2];const r=Math.hypot(y,z);const tau=tauAt(x);let u=profile(Math.min(r,1),tau);
+    if(tau>0.001){const ph=x*1.7-time*2.3,A=amp*tau*mix;
+      y+=A*(Math.sin(z*3.1+ph)+0.5*Math.sin(y*5.3-ph*1.3+x))*dt+A*0.9*gauss()*sq;
+      z+=A*(Math.sin(y*2.9-ph*0.8)+0.5*Math.cos(z*4.7+ph*1.1+x*0.7))*dt+A*0.9*gauss()*sq;
+      u*=1+0.3*tau*Math.sin(y*4+ph)*Math.cos(z*3-ph);}
+    x+=u*Uvis*dt;
+    const rr=Math.hypot(y,z);if(rr>0.975){const k=Math.max(2*0.975-rr,0)/rr;y*=k;z*=k;}
+    P[i]=x;P[i+1]=y;P[i+2]=z;return u;};
+  for(let j=0;j<NT;j++){const i=j*3;const u=adv(tP,i,false);if(tP[i]>X1)tP[i]-=LEN;
+    const s=clamp(u/2,0,1);let r,g,b;
+    if(s<0.6){const k=s/0.6;r=0.08+0.17*k;g=0.14+0.62*k;b=0.55+0.45*k;}else{const k=(s-0.6)/0.4;r=0.25+0.7*k;g=0.76+0.22*k;b=1;}
+    tC[i]=r;tC[i+1]=g;tC[i+2]=b;}
+  for(let j=0;j<ND;j++){const i=j*3;adv(dP,i,true);if(dP[i]>X1){dP[i]=NX+Math.random()*0.03;dP[i+1]=gauss()*0.008;dP[i+2]=gauss()*0.008;}}
+  tGeo.attributes.position.needsUpdate=tGeo.attributes.color.needsUpdate=dGeo.attributes.position.needsUpdate=true;
+  // Perfil
+  const tp=tauAt(PX),S=0.55;let o=0;const put=(x,y)=>{prPos[o++]=x;prPos[o++]=y;prPos[o++]=0;};
+  for(let k=0;k<NPr;k++){const y1=-0.985+1.97*k/NPr,y2=-0.985+1.97*(k+1)/NPr;put(PX+S*profile(Math.abs(y1),tp),y1);put(PX+S*profile(Math.abs(y2),tp),y2);}
+  for(let k=0;k<NAr;k++){const y=-0.81+k*0.18;put(PX,y);put(PX+S*profile(Math.abs(y),tp),y);}
+  put(PX,-1);put(PX,1);prGeo.attributes.position.needsUpdate=true;
+}
+
+// ---------- Interfaz ----------
+const fmt=(x,d)=>x.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const sup={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+const sci=x=>{if(x>=0.001)return fmt(x,x>=1?2:6).replace(/0+$/,'').replace(/,$/,'');const e=Math.floor(Math.log10(x));return fmt(x/Math.pow(10,e),3)+'·10'+String(e).split('').map(c=>sup[c]).join('');};
+const REG=[
+  {t:'Laminar',c:'--lam',d:'Las capas de fluido se deslizan ordenadas, sin mezclarse. La tinta avanza como un hilo recto y el perfil de velocidades es una parábola.'},
+  {t:'Transición',c:'--tra',d:'Aparecen ráfagas turbulentas intermitentes que rompen el hilo de tinta y vuelven a desaparecer.'},
+  {t:'Turbulento',c:'--tur',d:'Remolinos en toda la sección mezclan el fluido. La tinta se dispersa enseguida y el perfil de velocidades se aplana.'}];
+const gpos=r=>clamp((Math.log10(Math.max(r,1e-9))-1)/5,0,1)*100;
+$('z0').style.width=gpos(2300)+'%';$('z1').style.width=(gpos(4000)-gpos(2300))+'%';$('z2').style.width=(100-gpos(4000))+'%';
+let lastReg=-1;
+function updateUI(f,d,v){
+  $('reVal').textContent=Re<1?fmt(Re,2):Re<10?fmt(Re,1):fmt(Math.round(Re),0);
+  $('needle').style.left=gpos(Re)+'%';
+  if(regime!==lastReg){lastReg=regime;const R=REG[regime];const col=css(R.c);
+    document.documentElement.style.setProperty('--regc',col);$('regime').textContent=R.t;$('regDesc').textContent=R.d;
+    glass.uniforms.uColor.value.set(col);sliceMat.color.set(col);}
+  $('fluidProps').textContent=f.cond+' · ρ '+fmt(f.rho,f.rho<10?3:0)+' kg/m³ · μ '+(f.mu*1000<1?fmt(f.mu*1000,4):fmt(f.mu*1000,2))+' mPa·s';
+  $('velOut').textContent=fmt(v,v<0.1?3:2)+' m/s';
+  $('pipeOut').textContent=PIPES[pi].n+' · Ø int. '+fmt(d*1000,1)+' mm';
+  $('formula').innerHTML='Re = ρ · v · D / μ = '+fmt(f.rho,f.rho<10?3:0)+' · '+fmt(v,v<0.1?3:2)+' · '+fmt(d,4)+' / '+sci(f.mu)+' = <b>'+(Re<10?fmt(Re,2):fmt(Math.round(Re),0))+'</b>';
+}
+function chips(host,items,label,get,set){items.forEach((it,k)=>{const b=document.createElement('button');b.type='button';b.textContent=label(it);b.setAttribute('aria-pressed',k===get());
+  b.addEventListener('click',()=>{stopSweep();set(k);[...host.children].forEach((c,j)=>c.setAttribute('aria-pressed',j===k));recompute();});host.appendChild(b);});}
+chips($('fluids'),FLUIDS,f=>f.name,()=>fi,k=>fi=k);
+chips($('pipes'),PIPES,p=>p.n,()=>pi,k=>pi=k);
+const setChips=()=>{[...$('fluids').children].forEach((c,j)=>c.setAttribute('aria-pressed',j===fi));[...$('pipes').children].forEach((c,j)=>c.setAttribute('aria-pressed',j===pi));};
+$('vel').addEventListener('input',e=>{stopSweep();vt=+e.target.value;recompute();});
+
+// Recorrido automático (para grabar)
+let sweep=null;
+function stopSweep(){if(sweep){sweep=null;$('bSweep').setAttribute('aria-pressed','false');}}
+$('bSweep').addEventListener('click',()=>{if(sweep){stopSweep();return;}fi=0;pi=1;setChips();sweep={t0:performance.now()};$('bSweep').setAttribute('aria-pressed','true');});
+function runSweep(now){if(!sweep)return;const T=((now-sweep.t0)/1000)%28,lo=160,hi=880;let k;
+  if(T<2)k=0;else if(T<18)k=sstep(0,1,(T-2)/16);else if(T<22)k=1;else k=1-sstep(0,1,(T-22)/6);
+  const nt=Math.round(lo+(hi-lo)*k);if(nt!==vt){vt=nt;$('vel').value=vt;recompute();}}
+$('bDye').addEventListener('click',e=>{const on=e.currentTarget.getAttribute('aria-pressed')!=='true';e.currentTarget.setAttribute('aria-pressed',on);dye.visible=on;res.visible=on;});
+function setClean(on){$('panel').hidden=on;$('showUi').hidden=!on;}
+$('bClean').addEventListener('click',()=>setClean(true));$('showUi').addEventListener('click',()=>setClean(false));
+addEventListener('keydown',e=>{if(e.key==='h'||e.key==='H'){setClean(!$('panel').hidden);}});
+
+// Etiquetas 3D
+const labels=[['Perfil de velocidades',[PX+0.5,1.12,0]],['Inyección de tinta',[NX-0.14,2.85,0]]].map(([t,p])=>{const d=document.createElement('div');d.className='lbl';d.textContent=t;$('labels').appendChild(d);return {d,v:new THREE.Vector3(...p)};});
+const pv=new THREE.Vector3();
+function placeLabels(){labels.forEach(l=>{pv.copy(l.v).project(camera);l.d.style.display=pv.z<1?'':'none';l.d.style.left=((pv.x+1)/2*innerWidth)+'px';l.d.style.top=((1-pv.y)/2*innerHeight)+'px';});}
+
+addEventListener('resize',()=>{renderer.setSize(innerWidth,innerHeight);if(composer)composer.setSize(innerWidth,innerHeight);fitCam();});
+recompute();stepParticles(0.001);
+let last=performance.now();
+(function loop(t){requestAnimationFrame(loop);const dt=Math.min((t-last)/1000,0.033);last=t;
+  runSweep(t);stepParticles(reduce?dt*0.4:dt);controls.update();
+  composer?composer.render():renderer.render(scene,camera);placeLabels();})(last);
+</script>
+
+</body></html>
