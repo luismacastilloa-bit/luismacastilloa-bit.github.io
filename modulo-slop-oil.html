@@ -1,0 +1,2549 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}</style>
+<title>Módulo de Slop Oil</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: tablero de presentación de proceso — vista (3D o diagrama) a la izquierda, panel de operación a la derecha.
+   Fondo claro y frío como una lámina técnica; el color vivo se reserva para los fluidos y los estados anormales. */
+:root{
+  --bg:#edf1f5; --panel:#ffffff; --panel-2:#f3f6f9; --line:#dbe2ea; --line-2:#c6d0db;
+  --fg:#1d2833; --muted:#5b6978; --faint:#8b97a4;
+  --accent:#1b78b9; --accent-ink:#ffffff;
+  --ok:#2f9a5f; --warn:#c48a12; --alarm:#d0453a; --info:#1b78b9;
+  --scene:#dfe6ed; --scene-hi:#f7f9fb; --ground:#d3d9df;
+  --slop:#8a5a2b; --hot:#c0662a; --oil:#eea21f; --water:#2f8fd8; --solids:#3a3632;
+  --demul:#3fae6a; --poly:#8fbf45; --heat:#d9473b; --flush:#7fc8f0; --n2:#9aa7b8;
+  --f-disp:"Red Hat Display","Segoe UI",Arial,sans-serif;
+  --f-body:"Red Hat Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151b; --panel:#17202a; --panel-2:#1e2833; --line:#2a3542; --line-2:#3a4655;
+    --fg:#e0e6ec; --muted:#8d9aa8; --faint:#66727f;
+    --accent:#4ea6e2; --accent-ink:#06121c;
+    --ok:#4cb37b; --warn:#e3b23c; --alarm:#ec5d50; --info:#4ea6e2;
+    --scene:#121820; --scene-hi:#26303b; --ground:#262d34; --solids:#6f6152;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151b; --panel:#17202a; --panel-2:#1e2833; --line:#2a3542; --line-2:#3a4655;
+  --fg:#e0e6ec; --muted:#8d9aa8; --faint:#66727f;
+  --accent:#4ea6e2; --accent-ink:#06121c;
+  --ok:#4cb37b; --warn:#e3b23c; --alarm:#ec5d50; --info:#4ea6e2;
+  --scene:#121820; --scene-hi:#26303b; --ground:#262d34; --solids:#6f6152;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.4}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 20px}
+.ttl .eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ttl h1{margin:2px 0 0;font-family:var(--f-disp);font-weight:700;font-size:28px;letter-spacing:-.01em;color:var(--accent);line-height:1.05;text-wrap:balance}
+.ttl .sub{color:var(--muted);font-size:13px}
+.hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;border:1px solid var(--line-2);
+  font-family:var(--f-disp);font-weight:600;font-size:13px;letter-spacing:.08em;text-transform:uppercase;background:var(--panel)}
+.pill .dot{width:9px;height:9px;border-radius:50%;background:var(--faint)}
+.pill[data-s="RUN"] .dot{background:var(--ok)} .pill[data-s="START"] .dot,.pill[data-s="FLUSH"] .dot,.pill[data-s="COAST"] .dot{background:var(--info)}
+.pill[data-s="HOLD"] .dot{background:var(--warn)} .pill[data-s="TRIP"] .dot{background:var(--alarm)}
+.pill[data-s="TRIP"]{border-color:var(--alarm)}
+.clock{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;padding:5px 10px;cursor:pointer;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.almbadge{font-family:var(--f-mono);font-size:12px;padding:5px 9px;border-radius:8px;border:1px solid var(--line-2);background:var(--panel);color:var(--muted);cursor:pointer}
+.almbadge.on{border-color:var(--alarm);color:var(--alarm)}
+.almbadge.blink{animation:blink 1s steps(2,start) infinite}
+@keyframes blink{to{visibility:hidden}}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:12px;min-height:0}
+.view{position:relative;min-height:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--scene)}
+#c3d{position:absolute;inset:0;isolation:isolate}
+#c3d canvas{display:block}
+.ov{position:absolute;z-index:3;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.ov>*{pointer-events:auto}
+.ov.tl{top:10px;left:10px;max-width:48%} .ov.tr{top:10px;right:10px;justify-content:flex-end;max-width:48%}
+.ov.bl{left:10px;bottom:10px;max-width:60%}
+.chip{border:1px solid var(--line-2);background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(6px);
+  border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer;color:var(--fg)}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.chip.tab{font-family:var(--f-disp);font-weight:600;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;padding:6px 9px;border-radius:7px;border:1px solid var(--line);
+  background:color-mix(in srgb,var(--panel) 85%,transparent);font-size:11px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:14px;height:4px;border-radius:2px;display:inline-block}
+.hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:2;font-size:12px;color:var(--muted);
+  background:color-mix(in srgb,var(--panel) 80%,transparent);padding:4px 10px;border-radius:6px;pointer-events:none;white-space:nowrap}
+
+.card{position:absolute;right:10px;bottom:10px;z-index:4;width:min(360px,calc(100% - 20px));max-height:calc(100% - 60px);overflow:auto;
+  background:var(--panel);border:1px solid var(--line-2);border-radius:10px;padding:12px 14px;box-shadow:0 12px 32px rgb(15 30 45 / .18)}
+.card .tag{font-family:var(--f-mono);font-size:12px;color:var(--accent);letter-spacing:.04em}
+.card h3{margin:2px 0 6px;font-family:var(--f-disp);font-size:19px;font-weight:700;line-height:1.15}
+.card p{margin:0 0 8px;color:var(--fg);font-size:13px}
+.card .x{position:absolute;top:8px;right:8px;border:0;background:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:4px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px;margin:6px 0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.card h4{margin:10px 0 2px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.card .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+.panel{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:2px}
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.sec>h2{margin:0 0 8px;font-family:var(--f-disp);font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.sec>h2 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;text-transform:none;color:var(--faint);font-weight:400}
+details.sec>summary{cursor:pointer;font-family:var(--f-disp);font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);list-style:none}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary::after{content:"＋";float:right;color:var(--faint)} details.sec[open]>summary::after{content:"－"}
+details.sec[open]>summary{margin-bottom:8px}
+
+.steps{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:4px}
+.steps li{display:grid;grid-template-columns:18px 1fr auto;gap:8px;align-items:center;font-size:13px;color:var(--faint)}
+.steps li .m{width:12px;height:12px;border-radius:50%;border:2px solid var(--line-2)}
+.steps li.done{color:var(--muted)} .steps li.done .m{background:var(--ok);border-color:var(--ok)}
+.steps li.act{color:var(--fg);font-weight:600} .steps li.act .m{border-color:var(--info);background:color-mix(in srgb,var(--info) 35%,transparent);animation:pulse 1.2s ease-in-out infinite}
+.steps li .v{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);font-weight:400}
+@keyframes pulse{50%{transform:scale(.7)}}
+.msg{font-size:12.5px;color:var(--muted);min-height:1.4em;margin-bottom:8px}
+.msg.warn{color:var(--warn)} .msg.alarm{color:var(--alarm)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn{border:1px solid var(--line-2);background:var(--panel-2);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:13px}
+.btn:hover{border-color:var(--muted)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.stop{border-color:color-mix(in srgb,var(--alarm) 60%,var(--line-2))}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:5px 9px;font-size:12px;font-weight:500}
+
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kpi{position:relative;background:var(--panel-2);border-radius:7px;padding:7px 9px 7px 12px;min-width:0}
+.kpi::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--line-2)}
+.kpi[data-s="ok"]::before{background:var(--ok)} .kpi[data-s="warn"]::before{background:var(--warn)} .kpi[data-s="alarm"]::before{background:var(--alarm)}
+.kpi .l{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .v{font-family:var(--f-mono);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .v small{font-size:11px;color:var(--muted);font-weight:400;margin-left:3px}
+.kpi[data-s="alarm"] .v{color:var(--alarm)} .kpi[data-s="warn"] .v{color:var(--warn)}
+#trend{width:100%;height:230px;display:block}
+
+.ctl{display:grid;gap:9px}
+.sl label{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--muted)}
+.sl label b{font-family:var(--f-mono);font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sl input[type=range]{width:100%;accent-color:var(--accent);margin:3px 0 0}
+.sl .note{font-size:11.5px;color:var(--faint)}
+.chk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg)}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.faults{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.fbtn{text-align:left;border:1px solid var(--line-2);background:var(--panel-2);border-radius:8px;padding:7px 9px;cursor:pointer;font-size:12.5px;line-height:1.25}
+.fbtn small{display:block;color:var(--faint);font-size:11px}
+.fbtn[aria-pressed="true"]{border-color:var(--alarm);background:color-mix(in srgb,var(--alarm) 14%,var(--panel-2))}
+.fbtn[aria-pressed="true"] small{color:var(--alarm)}
+.alms{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:12.5px}
+.alms li{display:grid;gap:4px;padding:8px 10px;border-radius:6px;background:var(--panel-2);border-left:3px solid var(--line-2)}
+.alms .ah{display:flex;justify-content:space-between;gap:8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.alms li.warn .sv{color:var(--warn)} .alms li.alarm .sv,.alms li.trip .sv{color:var(--alarm)}
+.alms .am{font-weight:600}
+.alms .ax{font-size:12.5px;color:var(--fg);font-weight:400}
+.alms .ax span{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.alms .ax.ok{color:var(--ok)}
+.alms .aa{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.almnote{font-size:12px;color:var(--muted);margin:-2px 0 8px}
+.guide ol{margin:4px 0 2px;padding-left:20px;display:grid;gap:5px;font-size:13px}
+.guide li::marker{color:var(--accent);font-weight:600}
+.alms li.warn{border-left-color:var(--warn)} .alms li.alarm,.alms li.trip{border-left-color:var(--alarm)}
+.alms li.unack{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--alarm) 35%,transparent)}
+.alms li .t{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.alms .empty{background:none;border:0;color:var(--faint);padding:2px 0}
+.log{margin-top:8px;font-family:var(--f-mono);font-size:11px;color:var(--muted);max-height:120px;overflow:auto;display:grid;gap:2px}
+table.bal{width:100%;border-collapse:collapse;font-size:12.5px}
+table.bal th{text-align:left;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:4px 4px;border-bottom:1px solid var(--line)}
+table.bal td{padding:4px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+table.bal td.n{text-align:right;font-family:var(--f-mono);white-space:nowrap}
+table.bal td i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.basis{font-size:12.5px;color:var(--fg)} .basis ul{margin:4px 0 8px;padding-left:18px} .basis li{margin:2px 0}
+.basis p{margin:4px 0 8px;color:var(--muted)}
+footer.ft{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;font-size:12px;color:var(--faint)}
+
+.scns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.scn{display:grid;gap:2px;text-align:left;border:1px solid var(--line-2);background:var(--panel-2);border-radius:8px;padding:8px 10px;cursor:pointer;font-size:13px;font-weight:600;line-height:1.25;color:var(--fg)}
+.scn small{font-weight:400;font-size:11.5px;color:var(--muted)}
+.scn:hover:not(:disabled){border-color:var(--accent)}
+.scn:disabled{opacity:.45;cursor:not-allowed}
+.scn[aria-pressed="true"]{border-color:var(--alarm);background:color-mix(in srgb,var(--alarm) 10%,var(--panel-2));opacity:1}
+.sit{border-color:var(--alarm);box-shadow:0 0 0 3px color-mix(in srgb,var(--alarm) 14%,transparent)}
+.sit.fixing{border-color:var(--info);box-shadow:0 0 0 3px color-mix(in srgb,var(--info) 14%,transparent)}
+.sit.done{border-color:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 14%,transparent)}
+.sit .eyb{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--alarm)}
+.sit.fixing .eyb{color:var(--info)} .sit.done .eyb{color:var(--ok)}
+.sit h3{margin:2px 0 8px;font-family:var(--f-disp);font-size:19px;line-height:1.15}
+.sit .blk{margin:0 0 8px;font-size:13px}
+.sit .blk>span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.sit ul{margin:0;padding-left:18px;display:grid;gap:3px}
+.sit .live{font-family:var(--f-mono);font-size:12px;color:var(--fg);background:var(--panel-2);border-radius:6px;padding:6px 8px;display:grid;gap:2px}
+.sit .fix{width:100%;padding:10px 12px;font-size:14px}
+.banner{position:absolute;left:10px;bottom:10px;z-index:4;max-width:calc(100% - 20px);display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--alarm);border-radius:9px;padding:7px 8px 7px 12px;box-shadow:0 8px 24px rgb(15 30 45 / .18);font-size:13px;font-weight:600}
+.banner.fixing{border-color:var(--info)} .banner.done{border-color:var(--ok)}
+.banner .dot{width:9px;height:9px;border-radius:50%;background:var(--alarm);animation:pulse 1.2s ease-in-out infinite}
+.banner.fixing .dot{background:var(--info)} .banner.done .dot{background:var(--ok);animation:none}
+.view.has-banner .ov.bl{display:none}
+.kpi .s{font-size:11.5px;color:var(--muted);font-family:var(--f-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gnote{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+/* etiquetas 3D */
+.lbl{font-family:var(--f-mono);font-size:11px;line-height:1.15;padding:2px 6px;border-radius:5px;cursor:pointer;white-space:nowrap;
+  background:color-mix(in srgb,var(--panel) 82%,transparent);border:1px solid var(--line-2);color:var(--fg);user-select:none}
+.lbl b{color:var(--accent);font-weight:600} .lbl em{font-style:normal;color:var(--fg)}
+.lbl span{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted)}
+.lbl.sel{border-color:var(--accent)}
+.lbl.al{border-color:var(--alarm)} .lbl.al b{color:var(--alarm)}
+.nolbl .lbl{display:none} .lbl.far span{display:none} .lbl:hover span{display:block} .tagonly .lbl span{display:none}
+
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;z-index:1;pointer-events:none}
+#c3d{background:radial-gradient(ellipse at 50% 35%,var(--scene-hi) 0%,var(--scene) 70%)}
+@media (prefers-reduced-motion: reduce){  .steps li.act .m{animation:none} .almbadge.blink{animation:none} }
+@media (max-width:1100px){ .main{grid-template-columns:minmax(0,1fr) 340px} }
+@media (max-width:900px){
+  html,body{height:auto}
+  .app{height:auto;grid-template-rows:auto auto auto}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .view{height:64vh;min-height:400px}
+  .panel{overflow:visible}
+  .ov.tl{max-width:calc(100% - 20px)} .ov.tr{max-width:calc(100% - 20px);left:10px;top:auto;bottom:10px;justify-content:flex-start}
+  .ov.bl{display:none}
+  .ov.bl{max-width:calc(100% - 20px)}
+  .hint{display:none}
+  .ttl h1{font-size:24px}
+}
+@media (max-width:480px){ .scns{grid-template-columns:1fr} .legend{display:none} }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="ttl">
+      <div class="eyebrow">Oil &amp; Gas · Upstream · Simulación de proceso</div>
+      <h1>Módulo de Tratamiento de Slop Oil</h1>
+      <div class="sub">Container ISO 40' HC · decantador trifásico (tricanter) · 5 m³/h de diseño</div>
+    </div>
+    <div class="hud">
+      <span class="pill" id="statePill" data-s="STOP"><span class="dot"></span><span id="stateTxt">Parado</span></span>
+      <span class="clock" id="clock" title="Tiempo simulado">T+00:00:00</span>
+      <div class="seg" role="group" aria-label="Velocidad de simulación">
+        <button id="sp1" aria-pressed="false">×1</button><button id="sp10" aria-pressed="true">×10</button><button id="sp60" aria-pressed="false">×60</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="view" id="view">
+      <div id="c3d"></div>
+      <div class="ov tl" id="cams">
+        <button class="chip" data-cam="general">General</button>
+        <button class="chip" data-cam="interior">Interior</button>
+        <button class="chip" data-cam="decanter">Decantador</button>
+        <button class="chip" data-cam="tanks">Tanques</button>
+        <button class="chip" data-cam="elec">Sala eléctrica</button>
+      </div>
+      <div class="ov tr" id="ctl3d">
+        <button class="chip" id="tFlow" aria-pressed="false" title="Muestra por dentro las cañerías y tanques con el fluido circulando">Ver flujos</button>
+        <button class="chip" id="tCut" aria-pressed="false" title="Abre la cubierta y corta el bowl para ver las fases">Abrir decantador</button>
+        <button class="chip" id="tRoof" aria-pressed="false">Techo</button>
+        <button class="chip" id="tLbl" aria-pressed="true">Etiquetas</button>
+      </div>
+      <div class="hint" id="hint">Arrastrá para girar · rueda para acercar · clic en un equipo para ver qué hace</div>
+      <div class="loading" id="loading">Cargando el modelo 3D…</div>
+      <div class="banner" id="banner" hidden></div>
+      <div class="ov bl"><div class="legend" id="legend"></div></div>
+      <div class="card" id="card" hidden></div>
+    </div>
+
+    <aside class="panel" id="panel">
+      <section class="sec">
+        <h2>Operación <small id="seqName">Secuencia de arranque</small></h2>
+        <ul class="steps" id="steps"></ul>
+        <div class="msg" id="msg">Planta parada. Tocá Arrancar: la secuencia es automática.</div>
+        <div class="btns">
+          <button class="btn pri" id="bStart">Arrancar</button>
+          <button class="btn stop" id="bStop">Parar</button>
+          <button class="btn" id="bRestart" title="Vuelve todo al estado inicial: planta parada, tanques y totales como al abrir">Reiniciar desde cero</button>
+        </div>
+      </section>
+
+      <section class="sec sit" id="sit" hidden></section>
+
+      <section class="sec">
+        <h2>¿Qué pasa si…? <small id="scnNote">elegí una situación</small></h2>
+        <div class="scns" id="scns"></div>
+      </section>
+
+      <section class="sec">
+        <h2>Lo que entra y lo que sale <small id="prodNote">sin producción</small></h2>
+        <div class="kpis" id="kpis"></div>
+      </section>
+
+      <details class="sec guide" id="guide">
+        <summary>Cómo funciona el módulo</summary>
+        <ol>
+          <li><b>Entra</b> slop oil: una mezcla de aceite, agua y sólidos de fondos de tanque y piletas, guardada en TK-101.</li>
+          <li><b>Se prepara</b>: la bomba P-101 lo lleva por el filtro F-101 y el calentador E-101 hasta 85 °C, y se le agrega demulsificante y polímero.</li>
+          <li><b>Se separa</b> en el decantador X-101, que gira a 3.400 rpm: los sólidos van a la pared, el agua forma un anillo exterior y el aceite uno interior.</li>
+          <li><b>Salen</b> tres productos: aceite recuperado a TK-401, agua a TK-402 y torta de sólidos al volquete.</li>
+        </ol>
+        <p class="gnote">Activá <b>Ver flujos</b> para ver los fluidos por dentro de las cañerías y <b>Abrir decantador</b> para ver los anillos dentro del bowl. Tocá cualquier equipo para ver qué hace.</p>
+      </details>
+
+      <details class="sec basis">
+        <summary>Datos técnicos</summary>
+        <ul>
+          <li><b>Alimentación:</b> 5 m³/h de slop oil con 45 % de aceite (22 °API), 50 % de agua de producción y 5 % de sólidos.</li>
+          <li><b>Decantador trifásico:</b> bowl de Ø450 mm a 3.400 rpm (≈ 2.900 g). Motor principal de 45 kW y motor diferencial de 11 kW con control de torque. Carcasa inertizada con N₂.</li>
+          <li><b>Calentador E-101:</b> 250 kW con aceite térmico, consigna de 85 °C.</li>
+          <li><b>Químicos:</b> demulsificante a 120 ppm y polímero a 40 g/m³.</li>
+          <li><b>Container:</b> ISO 40' High Cube con sala eléctrica separada, ventilación forzada y detección de gas.</li>
+          <li><b>Fuera del container:</b> tanques TK-101, TK-401 y TK-402, volquete y calentador de aceite térmico.</li>
+        </ul>
+        <p>Los resultados salen de un modelo físico (ley de Stokes y teoría Sigma): la separación depende de la fuerza centrífuga, del caudal, de la temperatura y de los químicos. Los valores son ilustrativos.</p>
+      </details>
+    </aside>
+  </div>
+  <footer class="ft"><span>Ing. Luis Castillo · Ingeniero Mecánico</span><span>Simulación genérica con fines educativos</span></footer>
+</div>
+
+<script>
+// Modelo de separación del decantador trifásico (tricanter) — teoría Sigma + Stokes
+const MODEL = (() => {
+  const SIGMA_MAX = 2400;   // m² a 3600 rpm (bowl Ø450 mm, L clarif. 1,2 m)
+  const QMAX_HYD = 10;      // m³/h a 3600 rpm (límite hidráulico)
+  const RHO_S = 2600;       // kg/m³ sólidos
+  const R_BOWL = 0.225;     // m
+  const g = 9.81;
+
+  const rhoOil15 = api => 141.5 / (131.5 + api) * 999.0;
+  const rhoOil = (api, T) => rhoOil15(api) * (1 - 0.00072 * (T - 15));
+  const muOil = (api, T) => {          // mPa·s
+    const mu40 = Math.exp(7.8 - 0.17 * api);
+    const B = 3000 + 60 * (40 - api);
+    return mu40 * Math.exp(B * (1 / (T + 273.15) - 1 / 313.15));
+  };
+  const rhoWat = T => 1000 - 0.0178 * Math.pow(Math.abs(T - 4), 1.7) + 25; // agua de producción (salina)
+  const muWat = T => 1.1 * Math.exp(1800 * (1 / (T + 273.15) - 1 / 293.15)); // mPa·s
+
+  // fracción que escapa: distribución lognormal (d50, σg) y curva de grado η=(d/dc)², tope 1
+  function escape(dc, d50, sg) {
+    const ls = Math.log(sg), N = 60;
+    let tot = 0, esc = 0;
+    for (let i = 0; i < N; i++) {
+      const z = -4 + 8 * (i + 0.5) / N;
+      const w = Math.exp(-z * z / 2);
+      const d = d50 * Math.exp(z * ls);
+      const eta = Math.min(1, (d / dc) * (d / dc));
+      tot += w; esc += w * (1 - eta);
+    }
+    return esc / tot;
+  }
+  function cut(Qm3h, sigma, muPas, drho) {
+    const vg = (Qm3h / 3600) / (2 * Math.max(sigma, 1e-6));
+    return Math.sqrt(18 * muPas * vg / (Math.max(drho, 1) * g)) * 1e6; // µm
+  }
+  const demulGain = D => { const x = D / 120; return x * Math.exp(1 - x); };   // máx a 120 ppm, sobredosis re-estabiliza
+
+  function run(p) {
+    // p: Q, phiO, phiW, phiS, api, T, n, dn, demul, poly, s
+    const n = Math.max(p.n, 0), T = p.T;
+    const polyW = p.poly * p.Q / 2000;                 // m³/h de agua de dilución (solución 0,2 %)
+    const O = p.phiO * p.Q, W = p.phiW * p.Q + polyW, S = p.phiS * p.Q;
+    const Qt = O + W + S;
+    const ro = rhoOil(p.api, T), rw = rhoWat(T);
+    const mo = muOil(p.api, T) / 1000, mw = muWat(T) / 1000;
+    const ratio = n / 3600;
+    const sigma = SIGMA_MAX * ratio * ratio;
+    const s = Math.max(-1, Math.min(1, p.s));
+    const sigO = sigma * 0.45 * (1 + 0.45 * s), sigW = sigma * 0.8 * (1 - 0.45 * s);
+    const gD = demulGain(p.demul);
+    const dW50 = 9 * (1 + 2.6 * gD) * (1 + 0.006 * (T - 20));
+    const dO50 = 4.5 * (1 + 0.8 * gD) * (1 + 0.004 * (T - 20));
+    const F = 0.85 * (1 - Math.exp(-p.poly / 25)) * (p.poly > 150 ? Math.max(0.5, 1 - (p.poly - 150) / 300) : 1);
+    const dS50 = 18 * (1 + 1.5 * (1 - Math.exp(-p.poly / 30)));
+    const qmax = QMAX_HYD * Math.max(ratio, 0.05);
+    const ov = Qt / qmax;
+    const pen = ov > 0.85 ? Math.exp((ov - 0.85) * 6) : 1;
+    const dcW = cut(Qt, sigO, mo, rw - ro);   // gotas de agua en fase aceite
+    const dcO = cut(Qt, sigW, mw, rw - ro);   // gotas de aceite en fase agua
+    const dcS = cut(Qt, sigma, mw, RHO_S - rw);
+    const escW = Math.min(1, escape(dcW, dW50, 2.0) * pen);
+    const escO = Math.min(1, escape(dcO, dO50, 2.2) * pen);
+    const escS = Math.min(1, escape(dcS, dS50, 2.6) * pen);
+    const fines = 0.035;
+    const reent = 0.002 * Math.max(0, p.dn - 6);
+    let Es = (1 - fines * (1 - F)) * (1 - escS) * (1 - reent);
+    if (n < 600) Es = 0;
+    const btO = s > 0.8 ? 0.3 * Math.pow((s - 0.8) / 0.2, 2) : 0;   // rotura: aceite por salida de agua
+    const btW = s < -0.8 ? 0.25 * Math.pow((-s - 0.8) / 0.2, 2) : 0; // rotura: agua por salida de aceite
+    const We = Math.min(W, 0.35 * O), Od = 0.05 * O;
+    // sólidos y torta
+    const solKg = Es * S * RHO_S;
+    const torque = 8 + 0.677 * solKg / Math.max(p.dn, 0.5) * Math.pow(Math.max(ratio, 0.1) / (3400 / 3600), 1.5);
+    let DS = 40 + 30 * Math.exp(-p.dn / 10) + 6 * (ratio - 0.85);
+    DS = Math.max(20, Math.min(62, DS)) / 100;
+    const liqKg = solKg * (1 - DS) / DS;
+    const oilShare = 0.35 * O / Math.max(O + W, 1e-9);
+    const liqVol = liqKg / (oilShare * ro + (1 - oilShare) * rw);
+    const oilCake = liqVol * oilShare, watCake = liqVol * (1 - oilShare);
+    const oilToW = Od * escO + btO * O;
+    const oilOut = Math.max(0, O - oilToW - oilCake);
+    const watToO = We * escW + btW * (W - We);
+    const watOut = Math.max(0.05 * W, W - watToO - watCake);
+    const Sesc = S * (1 - Es);
+    const bsw = (watToO + 0.2 * Sesc) / Math.max(oilOut + watToO + 0.2 * Sesc, 1e-9) * 100;
+    const oiw = oilToW * ro * 1000 / watOut;               // mg/L
+    const tss = 0.8 * Sesc * RHO_S * 1000 / watOut;         // mg/L
+    const omega = n * 2 * Math.PI / 60, v = omega * R_BOWL;
+    const rhoMix = (O * ro + W * rw + S * RHO_S) / Math.max(Qt, 1e-9);
+    const pMain = (n > 50 ? 2 : 0) + 12 * ratio ** 3 + rhoMix * Qt / 3600 * v * v / 1000;
+    const pBack = 0.6 + (torque / 100) * 3.5 * (p.dn * 2 * Math.PI / 60);
+    return {
+      Qt, O, W, S, polyW, ro, rw, mo: mo * 1000, mw: mw * 1000, sigma, ov,
+      G: omega * omega * R_BOWL / g, dcW, dcO, dcS, dW50, escW, escO, Es,
+      oilOut, watToO, oilToW, watOut, Sesc, solKg, cakeKg: solKg + liqKg, DS: DS * 100,
+      bsw, oiw, tss, torque, rec: oilOut / Math.max(O, 1e-9) * 100,
+      oilLiquidOut: oilOut + watToO + 0.2 * Sesc, waterLiquidOut: watOut + oilToW + 0.8 * Sesc,
+      pMain, pBack, btO, btW
+    };
+  }
+  function cpMix(p) { // kJ/kg·K (fracciones en masa)
+    const ro = rhoOil15(p.api), mO = p.phiO * ro, mW = p.phiW * 1025, mS = p.phiS * RHO_S, m = mO + mW + mS;
+    return (mO * 2.1 + mW * 4.0 + mS * 0.85) / m;
+  }
+  function rhoFeed(p, T) { return p.phiO * rhoOil(p.api, T) + p.phiW * rhoWat(T) + p.phiS * RHO_S; }
+  return { run, cpMix, rhoFeed, rhoOil, muOil, rhoWat, muWat };
+})();
+if (typeof module !== 'undefined') module.exports = MODEL;
+
+// ===================== MOTOR DE SIMULACIÓN =====================
+(function () {
+  const CAP = { tk101: 40, tk401: 40, tk402: 40, tk102: 0.6, skip: 10, tk201: 1000, tk301: 1000 };
+  const HEAT_MAX = 250;          // kW E-101
+  const FLUSH_Q = 3;             // m³/h agua de lavado
+  const P102_Q = 8;              // m³/h
+  const CAKE_RHO = 1600;         // kg/m³ torta (aparente)
+
+  const SIM = window.SIM = {
+    CAP, speed: 1,
+    sp: { Q: 5, T: 85, n: 3400, dn: 8, autoTq: true, tqSp: 60, demul: 120, poly: 40, iface: 50, bswSpec: 1.0 },
+    feed: { oil: 45, sol: 5, api: 22, Ttank: 45, inflow: false },
+    faults: { clog: false, heat: false, demul: false, poly: false, slug: false, unbal: false, gas: false },
+    st: null, fl: {}, alarms: new Map(), events: [], hist: [], onFrame: [], producing: false
+  };
+
+  function init() {
+    SIM.st = {
+      t: 0, mode: 'STOP', step: 0, stepT: 0, fed: false, msg: '', msgSev: '',
+      n: 0, dn: 0, dnCmd: SIM.sp.dn, q: 0, Tout: SIM.feed.Ttank, route: 'none', flush: false, dosing: false, screw: false,
+      mainOn: false, backOn: false, pumpOn: false, purge: false, vent: false,
+      O2: 21, LEL: 1, vib: 0.3, vibX: 0, tq: 8, slugT: 0,
+      basket: 'A', clog: { A: 0.03, B: 0 }, cleanT: { A: 0, B: 0 },
+      demulEff: 0, polyEff: 0, p102: false, tlowT: 0, bswHi: 0, bswLo: 0, divert: false, prep: false,
+      lv: { tk101: 32, tk401: 6, tk402: 8, tk102: 0.2, skip: 1.2, tk201: 750, tk301: 820 },
+      d: { oilQ: 0, watQ: 0, cakeVol: 0, cakeKg: 0, solKg: 0, bsw: 0, oiw: 0, tss: 0, Es: 0, rec: 0, DS: 0, G: 0, dcW: 0, sigma: 0, ov: 0, btO: 0, btW: 0, rhoF: 0 },
+      tot: { feed: 0, oil: 0, oilRec: 0, water: 0, cake: 0, demul: 0, poly: 0, kwh: 0, kwhTh: 0 },
+      P: { main: 0, back: 0, p101: 0, p102: 0, dos: 0, sc: 0, vent: 0, aux: 0, tot: 0 },
+      duty: 0, tcv: 0, pt101: 0, dp: 0, trip: null, hold: null, histT: 0
+    };
+    SIM.alarms.clear(); SIM.events.length = 0; SIM.hist.length = 0;
+  }
+  init();
+  // reinicio completo: planta parada, tanques y totales como al abrir la página
+  SIM.restart = function () {
+    for (const k in SIM.faults) SIM.faults[k] = false;
+    Object.assign(SIM.sp, { Q: 5, T: 85, n: 3400, dn: 8, autoTq: true, tqSp: 60, demul: 120, poly: 40, iface: 50, bswSpec: 1.0 });
+    Object.assign(SIM.feed, { oil: 45, sol: 5, api: 22, Ttank: 45, inflow: false });
+    for (const k in SIM.fl) SIM.fl[k] = 0;
+    SIM.producing = false;
+    init();
+    event('Simulación reiniciada desde cero');
+  };
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lag = (cur, tgt, h, tau) => cur + (tgt - cur) * (1 - Math.exp(-h / tau));
+  const ramp = (cur, tgt, rate) => cur < tgt ? Math.min(tgt, cur + rate) : Math.max(tgt, cur - rate);
+  SIM.pct = k => SIM.st.lv[k] / CAP[k] * 100;
+
+  function event(msg, sev = 'info') {
+    SIM.events.unshift({ t: SIM.st.t, msg, sev });
+    if (SIM.events.length > 40) SIM.events.pop();
+  }
+  SIM.event = event;
+  function setMsg(m, sev = '') { SIM.st.msg = m; SIM.st.msgSev = sev; }
+
+  SIM.comp = function () {
+    const f = SIM.feed, st = SIM.st;
+    let s = f.sol / 100;
+    if (st.slugT > 0) {
+      const k = clamp(Math.min((240 - st.slugT) / 25, st.slugT / 25), 0, 1);
+      s = s + (0.13 - s) * k;
+    }
+    const o = f.oil / 100;
+    return { phiO: o, phiW: Math.max(0, 1 - o - s), phiS: s, api: f.api };
+  };
+
+  // ---------- permisivos y causas ----------
+  function permissives() {
+    const st = SIM.st;
+    if (st.LEL > 10) return 'gas en el container (AIT-901 > 10 % LEL)';
+    if (SIM.pct('tk101') < 15) return 'nivel bajo en TK-101';
+    if (SIM.pct('tk401') > 90) return 'TK-401 casi lleno';
+    if (SIM.pct('tk402') > 90) return 'TK-402 casi lleno';
+    if (SIM.pct('skip') > 90) return 'volquete SK-501 casi lleno';
+    if (st.clog[st.basket] > 1.2) return 'canasto de F-101 obstruido';
+    return null;
+  }
+  function holdCause() {
+    const st = SIM.st;
+    if (SIM.pct('tk101') < 12) return 'nivel bajo en TK-101';
+    if (st.clog[st.basket] + 0.04 > 1.4) return 'canasto de F-101 obstruido: cambiá de canasto';
+    if (SIM.pct('tk401') > 93) return 'TK-401 lleno';
+    if (SIM.pct('tk402') > 93) return 'TK-402 lleno';
+    if (SIM.pct('skip') > 96) return 'volquete lleno';
+    if (st.tq > 85) return 'torque todavía alto';
+    if (st.LEL > 10) return 'gas en el container';
+    return null;
+  }
+
+  // ---------- comandos ----------
+  SIM.start = function () {
+    const st = SIM.st;
+    if (st.mode === 'TRIP') { setMsg('Primero hay que resetear el disparo.', 'warn'); return; }
+    if (st.mode === 'RUN' || st.mode === 'START') return;
+    if (st.mode === 'HOLD') {
+      const why = holdCause();
+      if (why) { setMsg('No se puede reanudar: ' + why + '.', 'warn'); return; }
+      st.hold = null; st.mode = 'START'; st.step = 2; st.stepT = 0;
+      event('Alimentación reanudada: precalentamiento en recirculación');
+      return;
+    }
+    if (st.mode === 'FLUSH') return;
+    const why = permissives();
+    if (why) { setMsg('Arranque bloqueado: ' + why + '.', 'warn'); event('Arranque bloqueado: ' + why, 'warn'); return; }
+    st.mode = 'START'; st.step = 1; st.stepT = 0; st.fed = false;
+    event('Secuencia de arranque iniciada');
+  };
+  SIM.stop = function () {
+    const st = SIM.st;
+    if (st.mode === 'START' || st.mode === 'RUN' || st.mode === 'HOLD') {
+      st.hold = null;
+      if (st.fed) { st.mode = 'FLUSH'; st.stepT = 0; event('Parada: corte de alimentación y lavado con agua caliente'); }
+      else { st.mode = 'COAST'; event('Parada: desaceleración del bowl'); }
+    }
+  };
+  SIM.reset = function () {
+    const st = SIM.st;
+    if (st.mode !== 'TRIP') return;
+    const c = st.trip && st.trip.key;
+    if (c === 'VSHH' && st.vib > 6) { setMsg('La vibración sigue alta. Esperá a que baje.', 'warn'); return; }
+    if (c === 'ESD' && st.LEL > 10) { setMsg('Sigue habiendo gas en el container (> 10 % LEL).', 'warn'); return; }
+    st.trip = null; st.mode = st.n > 5 ? 'COAST' : 'STOP';
+    event('Disparo reseteado');
+  };
+  SIM.switchBasket = function () {
+    const st = SIM.st, other = st.basket === 'A' ? 'B' : 'A';
+    if (st.clog[other] > 0.1) { setMsg('El canasto ' + other + ' todavía se está limpiando.', 'warn'); return false; }
+    const prev = st.basket; st.basket = other; st.cleanT[prev] = 180;
+    event('F-101: cambio al canasto ' + other + '; canasto ' + prev + ' a limpieza');
+    return true;
+  };
+  SIM.ship = function () {
+    const lv = SIM.st.lv;
+    lv.tk401 = 4; lv.tk402 = 4; lv.skip = 0;
+    if (lv.tk101 < 20) lv.tk101 = 32;
+    lv.tk201 = Math.max(lv.tk201, 950);
+    event('Logística: aceite y agua despachados, volquete reemplazado, TK-101 recargado');
+  };
+  SIM.toggleFault = function (k) {
+    const f = SIM.faults; f[k] = !f[k];
+    if (k === 'slug' && f.slug) SIM.st.slugT = 240;
+    if (k === 'slug' && !f.slug) SIM.st.slugT = 0;
+    event((f[k] ? 'Falla simulada: ' : 'Falla normalizada: ') + FAULT_NAMES[k], f[k] ? 'warn' : 'info');
+  };
+  const FAULT_NAMES = SIM.FAULT_NAMES = {
+    clog: 'Obstrucción rápida del filtro F-101', heat: 'Pérdida de aceite térmico en E-101',
+    demul: 'Falla de la bomba de demulsificante P-201', poly: 'Falla de la dosificación de polímero P-301',
+    slug: 'Golpe de sólidos (fondo de tanque)', unbal: 'Desbalanceo del bowl', gas: 'Fuga de gas en el container'
+  };
+
+  function trip(key, tag, msg) {
+    const st = SIM.st;
+    if (st.mode === 'TRIP') return;
+    st.mode = 'TRIP'; st.trip = { key, tag, msg }; st.hold = null;
+    event('DISPARO ' + tag + ': ' + msg, 'trip');
+  }
+  function hold(key, tag, msg) {
+    const st = SIM.st;
+    if (st.mode === 'HOLD' || st.mode === 'TRIP') return;
+    st.mode = 'HOLD'; st.hold = { key, tag, msg };
+    event('Corte de alimentación ' + tag + ': ' + msg, 'alarm');
+  }
+
+  // ---------- un paso de integración ----------
+  function step(h) {
+    const st = SIM.st, sp = SIM.sp, fa = SIM.faults, feed = SIM.feed, lv = st.lv;
+    st.t += h; st.stepT += h;
+    const comp = SIM.comp();
+
+    // ----- máquina de estados -----
+    switch (st.mode) {
+      case 'STOP':
+        Object.assign(st, { mainOn: false, backOn: false, pumpOn: false, route: 'none', flush: false, dosing: false, screw: false, purge: false });
+        setMsg('Planta parada. Presioná Arrancar para iniciar la secuencia automática.');
+        break;
+      case 'START':
+        st.purge = true; st.vent = true;
+        if (st.step === 1) {
+          setMsg('Inertizando la carcasa del decantador con N₂ (O₂ < 8 %).');
+          if (st.O2 < 8) { st.step = 2; st.stepT = 0; event('Inertización completa (O₂ ' + st.O2.toFixed(1) + ' %)'); }
+        } else {
+          Object.assign(st, { mainOn: true, backOn: true, screw: true, pumpOn: true, route: 'recirc', dosing: false, flush: false });
+          const accelOK = st.n >= sp.n * 0.97, heatOK = st.Tout >= sp.T - 3 && st.q >= sp.Q * 0.9;
+          if (!accelOK) setMsg('Acelerando el bowl y precalentando en recirculación a TK-101.');
+          else if (!heatOK) setMsg('Bowl en velocidad. Esperando temperatura: ' + st.Tout.toFixed(0) + ' / ' + (sp.T - 3).toFixed(0) + ' °C.' + (st.duty >= HEAT_MAX * 0.99 || fa.heat ? ' El calentador no alcanza la consigna.' : ''), fa.heat ? 'warn' : '');
+          if (accelOK && heatOK) {
+            st.mode = 'RUN'; st.stepT = 0; st.fed = true; st.tlowT = 0;
+            if (!fa.demul) st.demulEff = Math.max(st.demulEff, sp.demul * 0.9);
+            if (!fa.poly) st.polyEff = Math.max(st.polyEff, sp.poly * 0.9);
+            event('Producción: XV-102 envía la alimentación al decantador');
+          }
+        }
+        break;
+      case 'RUN':
+        Object.assign(st, { mainOn: true, backOn: true, screw: true, pumpOn: true, route: 'decanter', dosing: true, flush: false, purge: true, vent: true });
+        setMsg(st.divert ? 'Producción. Aceite fuera de especificación: XV-401 lo recircula a TK-101.' : 'Producción normal.', st.divert ? 'warn' : '');
+        if (st.Tout < sp.T - 15) st.tlowT += h; else st.tlowT = 0;
+        if (st.tlowT > 60) {
+          st.mode = 'START'; st.step = 2; st.stepT = 0; st.tlowT = 0;
+          event('TSL-102 temperatura baja: alimentación vuelve a recirculación', 'alarm');
+        }
+        break;
+      case 'HOLD':
+        Object.assign(st, { mainOn: true, backOn: true, screw: true, pumpOn: false, route: 'none', dosing: false, flush: false, purge: true, vent: true });
+        { const hp = window.ALM_HELP && ALM_HELP['hold_' + st.hold.key]; setMsg('Alimentación cortada por ' + st.hold.tag + ': ' + st.hold.msg + '. ' + (hp ? 'Qué hacer: ' + hp().todo : 'Corregí la causa y presioná Reanudar.'), 'warn'); }
+        break;
+      case 'FLUSH':
+        Object.assign(st, { mainOn: true, backOn: true, screw: true, pumpOn: false, route: 'none', dosing: false, flush: true, purge: true, vent: true });
+        setMsg('Lavando el bowl con agua caliente: ' + Math.max(0, 120 - st.stepT).toFixed(0) + ' s.');
+        if (st.stepT > 120) { st.mode = 'COAST'; st.stepT = 0; event('Lavado terminado: desaceleración del bowl'); }
+        break;
+      case 'COAST':
+        Object.assign(st, { mainOn: false, pumpOn: false, route: 'none', dosing: false, flush: false, vent: true });
+        st.backOn = st.n > 300; st.screw = st.n > 150; st.purge = st.n > 100;
+        setMsg('Desacelerando el bowl con frenado: ' + st.n.toFixed(0) + ' rpm.');
+        if (st.n < 3) { st.mode = 'STOP'; event('Planta parada'); }
+        break;
+      case 'TRIP':
+        Object.assign(st, { mainOn: false, pumpOn: false, route: 'none', dosing: false, flush: false, vent: true });
+        st.backOn = st.n > 300; st.screw = st.n > 150; st.purge = st.n > 100;
+        { const hp = window.ALM_HELP && ALM_HELP['trip_' + st.trip.key]; setMsg('DISPARO ' + st.trip.tag + ': ' + st.trip.msg + '. ' + (hp ? 'Qué hacer: ' + hp().todo : 'Corregí la causa y reseteá.'), 'alarm'); }
+        break;
+    }
+    st.vent = st.vent || st.LEL > 5 || st.mode !== 'STOP';
+
+    // ----- fallas con dinámica propia -----
+    if (st.slugT > 0) { st.slugT -= h; if (st.slugT <= 0) { st.slugT = 0; fa.slug = false; event('El golpe de sólidos ya pasó'); } }
+    st.vibX = fa.unbal && st.n > 500 ? Math.min(12, st.vibX + 0.11 * h) : Math.max(0, st.vibX - 0.25 * h);
+    st.LEL = fa.gas ? Math.min(45, st.LEL + 0.45 * h) : Math.max(1, st.LEL - (st.vent ? 1.2 : 0.3) * h);
+
+    // ----- accionamientos -----
+    st.n = st.mainOn ? ramp(st.n, sp.n, (st.n < sp.n ? 25 : 15) * h) : Math.max(0, st.n - 12 * h);
+    const feeding = st.route === 'decanter' && st.q > 0.05 && st.n > 100;
+    if (sp.autoTq && feeding) st.dnCmd = clamp(st.dnCmd + 0.02 * (st.tq - sp.tqSp) * h, 2, 30);
+    else if (sp.autoTq && !feeding && st.dnCmd < 6) st.dnCmd = 8;
+    else if (!sp.autoTq) st.dnCmd = sp.dn;
+    st.dn = st.backOn ? ramp(st.dn, st.dnCmd, 0.8 * h) : ramp(st.dn, 0, 2 * h);
+    st.q = st.pumpOn ? ramp(st.q, sp.Q, 0.8 * h) : ramp(st.q, 0, 1.2 * h);
+    st.O2 = st.purge ? lag(st.O2, 3.5, h, 10) : lag(st.O2, 21, h, 40);
+
+    // ----- calentador E-101 -----
+    const Tin = feed.Ttank;
+    const rhoF = MODEL.rhoFeed(comp, Tin), cp = MODEL.cpMix(comp);
+    const heatMax = fa.heat ? 0 : HEAT_MAX;
+    if (st.q > 0.05) {
+      const mcp = st.q * rhoF / 3600 * cp;
+      const req = Math.max(0, mcp * (sp.T - Tin));
+      st.duty = Math.min(req, heatMax);
+      st.tcv = fa.heat ? (req > 0 ? 100 : 0) : clamp(req / HEAT_MAX * 100, 0, 100);
+      st.Tout = lag(st.Tout, Tin + st.duty / mcp, h, 45);
+    } else { st.duty = 0; st.tcv = 0; st.Tout = lag(st.Tout, Tin, h, 400); }
+
+    // ----- químicos -----
+    const dem = st.dosing && !fa.demul && lv.tk201 > 5;
+    const pol = st.dosing && !fa.poly && lv.tk301 > 20;
+    const demLh = dem ? sp.demul * st.q / 1000 : 0;       // L/h
+    const polLh = pol ? sp.poly * st.q / 2 : 0;            // L/h de solución al 0,2 %
+    st.demulEff = lag(st.demulEff, dem ? sp.demul : 0, h, 60);
+    st.polyEff = lag(st.polyEff, pol ? sp.poly : 0, h, 25);
+
+    // ----- separación -----
+    const d = st.d;
+    let r = null;
+    if (feeding) {
+      r = MODEL.run({ Q: st.q, ...comp, T: st.Tout, n: st.n, dn: Math.max(st.dn, 0.5), demul: st.demulEff, poly: st.polyEff, s: (sp.iface - 50) / 50 });
+      st.r = r;
+      const tq = 22;
+      d.oilQ = lag(d.oilQ, r.oilLiquidOut, h, 20); d.watQ = lag(d.watQ, r.waterLiquidOut, h, 20);
+      d.cakeKg = lag(d.cakeKg, r.cakeKg, h, 30); d.solKg = lag(d.solKg, r.solKg, h, 30); d.cakeVol = d.cakeKg / CAKE_RHO;
+      for (const k of ['bsw', 'oiw', 'tss', 'rec', 'DS']) d[k] = d[k] === 0 ? r[k] : lag(d[k], r[k], h, tq);
+      d.Es = d.Es === 0 ? r.Es * 100 : lag(d.Es, r.Es * 100, h, tq);
+      d.G = r.G; d.dcW = r.dcW; d.sigma = r.sigma; d.ov = r.ov; d.btO = r.btO; d.btW = r.btW;
+      st.tq = lag(st.tq, r.torque, h, 15);
+    } else {
+      d.oilQ = lag(d.oilQ, 0, h, 15); d.watQ = lag(d.watQ, st.flush ? FLUSH_Q : 0, h, 15);
+      d.cakeKg = lag(d.cakeKg, 0, h, 40); d.solKg = lag(d.solKg, 0, h, 40); d.cakeVol = d.cakeKg / CAKE_RHO;
+      d.G = Math.pow(st.n * 2 * Math.PI / 60, 2) * 0.225 / 9.81; d.btO = 0; d.btW = 0;
+      st.tq = st.backOn ? lag(st.tq, 8, h, 60) : lag(st.tq, 0, h, 20);
+    }
+    d.rhoF = MODEL.rhoFeed(comp, st.Tout);
+    SIM.producing = feeding;
+
+    // ----- vibración -----
+    const ratio = st.n / 3600;
+    const vibT = st.n < 5 ? 0 : 0.4 + 1.6 * ratio * ratio + 3.2 * Math.exp(-Math.pow((st.n - 750) / 120, 2)) + st.vibX * ratio * ratio * 1.05 + Math.max(0, st.tq - 90) * 0.05;
+    st.vib = lag(st.vib, vibT, h, 3);
+
+    // ----- divert por BS&W -----
+    if (feeding && d.oilQ > 0.05) {
+      if (d.bsw > sp.bswSpec) { st.bswHi += h; st.bswLo = 0; } else if (d.bsw < 0.8 * sp.bswSpec) { st.bswLo += h; st.bswHi = 0; } else { st.bswHi = 0; st.bswLo = 0; }
+      if (!st.divert && st.bswHi > 10) { st.divert = true; event('AT-401 BS&W ' + d.bsw.toFixed(2) + ' %: XV-401 desvía el aceite a TK-101', 'warn'); }
+      if (st.divert && st.bswLo > 30) { st.divert = false; event('Aceite en especificación: XV-401 envía a TK-401'); }
+    } else if (!feeding && st.mode !== 'RUN') { st.bswHi = 0; }
+
+    // ----- filtro F-101 -----
+    for (const b of ['A', 'B']) if (st.cleanT[b] > 0) { st.cleanT[b] -= h; st.clog[b] = Math.max(0, st.clog[b] * (st.cleanT[b] / (st.cleanT[b] + h))); if (st.cleanT[b] <= 0) { st.clog[b] = 0; st.cleanT[b] = 0; } }
+    if (st.q > 0.05) st.clog[st.basket] += (st.q / 5) * (comp.phiS / 0.05) * (fa.clog ? 0.011 : 0.00008) * h;
+    st.dp = st.q > 0.05 ? 0.04 * Math.pow(st.q / 5, 2) + st.clog[st.basket] : 0;
+    st.pt101 = st.q > 0.05 ? 1.0 + st.dp + 0.6 * Math.pow(st.q / 5, 2) : 0;
+
+    // ----- caudales de líneas -----
+    const fl = SIM.fl;
+    fl.inflow = feed.inflow ? 8 : 0;
+    fl.suction = st.q; fl.feed = st.q;
+    fl.recirc = st.route === 'recirc' ? st.q : 0;
+    fl.dec = st.route === 'decanter' ? st.q : 0;
+    fl.flush = st.flush ? FLUSH_Q : 0;
+    fl.decFeed = fl.dec + fl.flush;
+    fl.demul = demLh; fl.poly = polLh / 1000;
+    fl.oil = d.oilQ > 0.02 ? d.oilQ : 0;
+    fl.oilTank = st.divert ? 0 : fl.oil; fl.oilRec = st.divert ? fl.oil : 0;
+    fl.retHdr = fl.recirc + fl.oilRec;
+    fl.heavy = d.watQ > 0.02 ? d.watQ : 0;
+    // P-102 por nivel
+    const p102pct = lv.tk102 / CAP.tk102 * 100;
+    if (p102pct > 70) st.p102 = true; else if (p102pct < 25) st.p102 = false;
+    fl.p102 = st.p102 ? P102_Q : 0;
+    fl.cake = st.screw && d.cakeVol > 0.005 ? d.cakeVol : 0;
+    fl.heat = st.duty > 1 ? 0.4 + st.duty / HEAT_MAX : 0;
+    fl.n2 = st.purge ? 1 : 0;
+    fl.coil = 1;
+
+    // ----- niveles -----
+    const k = h / 3600;
+    lv.tk101 = clamp(lv.tk101 + (fl.inflow + fl.retHdr - fl.suction) * k, 0, CAP.tk101);
+    if (feed.inflow && SIM.pct('tk101') > 95) { feed.inflow = false; event('TK-101 lleno: se corta el ingreso de slop'); SIM.uiDirty = true; }
+    lv.tk401 = clamp(lv.tk401 + fl.oilTank * k, 0, CAP.tk401);
+    lv.tk102 = clamp(lv.tk102 + (fl.heavy - fl.p102) * k, 0, CAP.tk102);
+    lv.tk402 = clamp(lv.tk402 + fl.p102 * k, 0, CAP.tk402);
+    lv.skip = clamp(lv.skip + fl.cake * k, 0, CAP.skip);
+    lv.tk201 = Math.max(0, lv.tk201 - demLh * k);
+    lv.tk301 = Math.max(0, lv.tk301 - polLh * k);
+    if (lv.tk301 < 300) st.prep = true;
+    if (st.prep) { lv.tk301 += 450 * k; if (lv.tk301 >= 950) { st.prep = false; } }
+
+    // ----- potencias -----
+    const P = st.P, omega = st.n * 2 * Math.PI / 60;
+    P.main = st.n > 5 ? 2 + 12 * ratio ** 3 : 0;
+    if (r) P.main += r.pMain - (2 + 12 * ratio ** 3);
+    if (st.mainOn && st.n < sp.n - 5) P.main += 25 * omega * (25 * 2 * Math.PI / 60) / 1000;
+    P.back = st.backOn && st.n > 50 ? 0.6 + st.tq / 100 * 3.5 * (st.dn * 2 * Math.PI / 60) : 0;
+    P.p101 = st.q > 0.05 ? 0.5 + st.q * st.pt101 * 0.12 : 0;
+    P.p102 = st.p102 ? 2.2 : 0;
+    P.dos = (demLh > 0 ? 0.15 : 0) + (polLh > 0 ? 0.75 : 0) + (st.prep ? 1.5 : 0);
+    P.sc = st.screw ? 1.5 + (fl.cake > 0 ? 0.6 : 0) : 0;
+    P.vent = st.vent ? 1.1 : 0;
+    P.aux = 2.0;
+    P.tot = P.main + P.back + P.p101 + P.p102 + P.dos + P.sc + P.vent + P.aux;
+
+    // ----- totalizadores -----
+    const T = st.tot;
+    T.feed += fl.dec * k; T.oil += fl.oilTank * k; T.oilRec += fl.oilRec * k; T.water += fl.p102 * k;
+    T.cake += fl.cake > 0 ? d.cakeKg * k / 1000 : 0; T.demul += demLh * k; T.poly += (pol ? sp.poly * st.q / 1000 : 0) * k;
+    T.kwh += P.tot * k; T.kwhTh += st.duty * k;
+
+    // ----- enclavamientos -----
+    if (['START', 'RUN', 'HOLD', 'FLUSH'].includes(st.mode)) {
+      if (st.vib > 11) trip('VSHH', 'VSHH-101', 'vibración muy alta (> 11 mm/s)');
+      else if (st.tq > 110) trip('TQ', 'WSHH-101', 'torque del tornillo muy alto (> 110 %)');
+      else if (st.LEL > 40) trip('ESD', 'AIT-901', 'gas al 40 % LEL, parada de emergencia');
+    }
+    if (st.mode === 'RUN' || (st.mode === 'START' && st.step === 2)) {
+      if (SIM.pct('tk101') < 8) hold('LSLL', 'LSLL-101', 'nivel muy bajo en TK-101');
+      else if (st.dp > 1.5) hold('PD', 'PDSHH-101', 'filtro F-101 obstruido (ΔP > 1,5 bar)');
+      else if (st.mode === 'RUN' && SIM.pct('tk401') > 95) hold('L401', 'LSHH-401', 'TK-401 lleno');
+      else if (st.mode === 'RUN' && SIM.pct('tk402') > 95) hold('L402', 'LSHH-402', 'TK-402 lleno');
+      else if (st.mode === 'RUN' && SIM.pct('skip') > 98) hold('LSK', 'LSHH-501', 'volquete lleno');
+      else if (st.mode === 'RUN' && SIM.pct('tk102') > 92) hold('L102', 'LSHH-102', 'cuba de fase pesada rebalsando');
+      else if (st.mode === 'RUN' && st.tq > 95) hold('TQH', 'WSH-101', 'torque alto, se corta la alimentación para vaciar el bowl');
+    }
+
+    // ----- alarmas -----
+    alarms(feeding);
+
+    // ----- historia -----
+    st.histT += h;
+    if (st.histT >= 2) {
+      st.histT = 0;
+      SIM.hist.push({ t: st.t, bsw: feeding ? d.bsw : null, oiw: feeding ? d.oiw : null, T: st.q > 0.05 ? st.Tout : null, Tsp: sp.T, tq: st.backOn ? st.tq : null });
+      if (SIM.hist.length > 460) SIM.hist.shift();
+    }
+  }
+
+  function alarms(feeding) {
+    const st = SIM.st, sp = SIM.sp, d = st.d, A = SIM.alarms;
+    const set = (key, cond, tag, msg, sev) => {
+      if (cond) { if (!A.has(key)) { A.set(key, { tag, msg, sev, t: st.t, ack: false }); if (sev !== 'info') event(tag + ': ' + msg, sev); } }
+      else if (A.has(key) && A.get(key).sev !== 'trip') A.delete(key);
+    };
+    set('bsw', feeding && d.bsw > sp.bswSpec, 'AT-401', 'BS&W del aceite fuera de especificación', 'warn');
+    set('oiw', feeding && d.oiw > 1000, 'AT-402', 'Aceite en agua > 1.000 mg/L', 'warn');
+    set('tl', st.route === 'decanter' && st.Tout < sp.T - 10, 'TAL-102', 'Temperatura de alimentación baja', 'warn');
+    set('pd', st.dp > 0.6, 'PDAH-101', 'ΔP alto en F-101: cambiar canasto', 'warn');
+    set('vib', st.vib > 7.1, 'VAH-101', 'Vibración alta en el decantador', 'alarm');
+    set('tq', st.tq > 85, 'WAH-101', 'Torque del tornillo alto', 'warn');
+    set('lel', st.LEL > 20, 'AIT-901', 'Gas en el container > 20 % LEL', 'alarm');
+    set('o2', st.n > 500 && st.O2 > 8 && st.mode !== 'COAST' && st.mode !== 'TRIP', 'AIT-902', 'O₂ alto en la carcasa del decantador', 'alarm');
+    set('l101', SIM.pct('tk101') < 15, 'LAL-101', 'Nivel bajo en TK-101', 'warn');
+    set('l401', SIM.pct('tk401') > 90, 'LAH-401', 'Nivel alto en TK-401', 'warn');
+    set('l402', SIM.pct('tk402') > 90, 'LAH-402', 'Nivel alto en TK-402', 'warn');
+    set('lsk', SIM.pct('skip') > 90, 'LAH-501', 'Volquete casi lleno', 'warn');
+    set('l201', SIM.pct('tk201') < 10, 'LAL-201', 'Queda poco demulsificante', 'warn');
+    set('heat', st.q > 0.05 && st.duty >= HEAT_MAX * 0.99 && !SIM.faults.heat, 'E-101', 'Calentador al máximo: no alcanza la consigna', 'warn');
+    set('hloss', st.q > 0.05 && SIM.faults.heat, 'TCV-101', 'Sin aceite térmico: TCV abierta al 100 % sin calentar', 'alarm');
+    set('ovl', feeding && d.ov > 0.95, 'X-101', 'Decantador sobrecargado hidráulicamente', 'warn');
+    set('fdem', st.dosing && SIM.faults.demul, 'FAL-201', 'P-201 sin caudal de demulsificante', 'alarm');
+    set('fpol', st.dosing && SIM.faults.poly, 'FAL-301', 'P-301 sin caudal de polímero', 'alarm');
+    set('bt', feeding && (d.btO > 0.01 || d.btW > 0.01), 'X-101', d.btO > 0.01 ? 'Rotura de fase: sale aceite con el agua' : 'Rotura de fase: sale agua con el aceite', 'alarm');
+    // disparos / cortes como alarma persistente hasta reconocer
+    if (st.trip && !A.has('trip_' + st.trip.key)) A.set('trip_' + st.trip.key, { tag: st.trip.tag, msg: 'DISPARO: ' + st.trip.msg, sev: 'trip', t: st.t, ack: false });
+    if (st.hold && !A.has('hold_' + st.hold.key)) A.set('hold_' + st.hold.key, { tag: st.hold.tag, msg: 'Corte de alimentación: ' + st.hold.msg, sev: 'trip', t: st.t, ack: false });
+  }
+  SIM.ack = function () {
+    for (const [k, a] of SIM.alarms) {
+      a.ack = true;
+      if (a.sev === 'trip') {
+        const still = (k.startsWith('trip_') && SIM.st.trip && 'trip_' + SIM.st.trip.key === k) || (k.startsWith('hold_') && SIM.st.hold && 'hold_' + SIM.st.hold.key === k);
+        if (!still) SIM.alarms.delete(k);
+      }
+    }
+  };
+
+  // ---------- bucle ----------
+  let last = performance.now();
+  function frame(now) {
+    const dtr = Math.min(0.1, (now - last) / 1000); last = now;
+    let dt = dtr * SIM.speed;
+    while (dt > 1e-6) { const h = Math.min(0.5, dt); step(h); dt -= h; }
+    for (const f of SIM.onFrame) { try { f(dtr); } catch (e) { console.error(e); } }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+// ===================== FICHAS DE EQUIPOS =====================
+(function () {
+  const S = () => SIM.st, D = () => SIM.st.d;
+  const N = window.N = (v, d = 1) => (v == null || !isFinite(v)) ? '—' : v.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const prod = () => SIM.producing;
+  const routeTxt = () => ({ recirc: 'Recirculación a TK-101', decanter: 'Al decantador', none: 'Cerrada' })[S().route];
+  const comp = () => SIM.comp();
+
+  window.INFO = {
+    'X-101': {
+      name: 'Decantador trifásico (tricanter)',
+      desc: 'Es el corazón del módulo. El bowl gira a unas 3.400 rpm y genera casi 3.000 veces la gravedad. Por densidad, el slop se ordena en anillos: los sólidos se pegan a la pared y el tornillo los empuja hacia la zona cónica y fuera del bowl; el agua forma el anillo exterior y sale por gravedad; el aceite, más liviano, forma el anillo interior y sale a presión por un rodete centrípeto.',
+      live: () => [['Velocidad del bowl', N(S().n, 0) + ' rpm'], ['Aceleración centrífuga', N(D().G, 0) + ' g'], ['Diferencial del tornillo', N(S().dn, 1) + ' rpm'], ['Torque del tornillo', N(S().tq, 0) + ' %'], ['Vibración', N(S().vib, 1) + ' mm/s'], ['O₂ en la carcasa', N(S().O2, 1) + ' %'], ['Potencia principal + diferencial', N(S().P.main, 1) + ' + ' + N(S().P.back, 1) + ' kW'], ['Gota de agua más chica que separa', prod() ? N(D().dcW, 1) + ' µm' : '—'], ['Carga hidráulica', prod() ? N(D().ov * 100, 0) + ' %' : '—']],
+      design: [['Bowl', 'Ø450 mm, L/D ≈ 4'], ['Velocidad máxima', '3.600 rpm (≈ 3.300 g)'], ['Área equivalente Σ', '≈ 2.400 m² a 3.600 rpm'], ['Motor principal', '45 kW con variador'], ['Motor diferencial', '11 kW, regulación por torque'], ['Seguridad', 'Carcasa inertizada con N₂, sensor de vibración']]
+    },
+    'P-101': {
+      name: 'Bomba de alimentación de tornillo excéntrico',
+      desc: 'Bombea el slop hacia el decantador con caudal estable y poco cizallamiento. Una bomba centrífuga cortaría las gotas de agua y haría la emulsión más difícil de romper. El variador de frecuencia fija el caudal.',
+      live: () => [['Caudal', N(S().q, 2) + ' m³/h'], ['Presión de descarga PT-101', S().q > 0.05 ? N(S().pt101, 1) + ' bar' : '—'], ['Potencia', N(S().P.p101, 1) + ' kW'], ['Destino (XV-102)', routeTxt()]],
+      design: [['Tipo', 'Cavidad progresiva, estator de NBR'], ['Rango', '1–10 m³/h a 6 bar'], ['Motor', '5,5 kW con variador'], ['Protecciones', 'Corte por nivel muy bajo en TK-101 y por filtro obstruido']]
+    },
+    'F-101': {
+      name: 'Filtro canasto doble (dúplex)',
+      desc: 'Retiene trapos, piedras y sólidos gruesos que podrían trabar la bomba o desbalancear el decantador. Tiene dos canastos: cuando uno se tapa se pasa al otro sin parar la planta y se limpia el primero.',
+      live: () => [['Canasto en servicio', S().basket], ['ΔP PDT-101', N(S().dp, 2) + ' bar'], ['Canasto A', S().cleanT.A > 0 ? 'en limpieza' : N(S().clog.A, 2) + ' bar de ensuciamiento'], ['Canasto B', S().cleanT.B > 0 ? 'en limpieza' : N(S().clog.B, 2) + ' bar de ensuciamiento']],
+      design: [['Conexiones', '3" brida ASME B16.5'], ['Malla', '6 mm, acero inoxidable'], ['Alarma / corte', 'ΔP 0,6 bar / 1,5 bar']],
+      action: { label: 'Cambiar de canasto', fn: () => SIM.switchBasket() }
+    },
+    'E-101': {
+      name: 'Calentador de alimentación',
+      desc: 'Intercambiador de tubos y carcasa que calienta el slop a 80–90 °C con aceite térmico. Al calentar, la viscosidad del aceite cae mucho y las gotas de agua decantan más rápido (ley de Stokes). Es la variable que más mejora la separación.',
+      live: () => [['Entrada (TK-101)', N(SIM.feed.Ttank, 0) + ' °C'], ['Salida TT-102', N(S().Tout, 1) + ' °C'], ['Consigna', N(SIM.sp.T, 0) + ' °C'], ['Calor transferido', N(S().duty, 0) + ' kW'], ['Apertura TCV-101', N(S().tcv, 0) + ' %'], ['Viscosidad del aceite', N(MODEL.muOil(SIM.feed.api, S().Tout), 1) + ' mPa·s']],
+      design: [['Tipo', 'Tubos y carcasa, 1 paso'], ['Carga máxima', '250 kW'], ['Fluido calefactor', 'Aceite térmico 180/150 °C (servicio)'], ['Aislación', 'Lana mineral con chapa de aluminio']]
+    },
+    'TCV-101': { alias: 'E-101' },
+    'FT-101': {
+      name: 'Caudalímetro Coriolis',
+      desc: 'Mide el caudal másico y la densidad de la alimentación. La densidad sirve para estimar cuánta agua y sólidos trae el slop antes de que llegue al decantador.',
+      live: () => [['Caudal másico', N(S().q * D().rhoF, 0) + ' kg/h'], ['Caudal volumétrico', N(S().q, 2) + ' m³/h'], ['Densidad', N(D().rhoF, 0) + ' kg/m³'], ['Temperatura', N(S().Tout, 1) + ' °C']],
+      design: [['Tamaño', '2"'], ['Exactitud', '±0,1 % en masa'], ['Señales', 'Masa, densidad, temperatura']]
+    },
+    'XV-102': {
+      name: 'Válvula de 3 vías de alimentación',
+      desc: 'En el arranque manda el slop caliente de vuelta a TK-101 hasta que el bowl está en velocidad y la temperatura llega a la consigna. Recién ahí lo envía al decantador. Si la temperatura cae, vuelve a recircular.',
+      live: () => [['Posición', routeTxt()]],
+      design: [['Tipo', 'Bola de 3 vías, actuador neumático'], ['Tamaño', '2"']]
+    },
+    'XV-601': {
+      name: 'Válvula de agua de lavado',
+      desc: 'En la parada inyecta agua caliente al decantador durante unos minutos para limpiar el bowl antes de frenarlo. Así no queda aceite ni lodo que desbalancee el próximo arranque.',
+      live: () => [['Estado', S().flush ? 'Abierta, ' + N(SIM.fl.flush, 1) + ' m³/h' : 'Cerrada']],
+      design: [['Servicio', 'Agua caliente de planta, 3 m³/h']]
+    },
+    'HV-101': {
+      name: 'Válvula de contrapresión de fase liviana',
+      desc: 'Regula la contrapresión en la salida de aceite y con eso mueve la interfaz aceite–agua dentro del bowl. Más contrapresión empuja la interfaz hacia afuera: el aceite sale más limpio, pero si se exagera termina saliendo aceite con el agua.',
+      live: () => [['Ajuste', N(SIM.sp.iface, 0) + ' %'], ['Interfaz', SIM.sp.iface > 60 ? 'Hacia afuera' : SIM.sp.iface < 40 ? 'Hacia adentro' : 'Centrada']],
+      design: [['Tipo', 'Válvula de control, actuador a diafragma']]
+    },
+    'AT-401': {
+      name: 'Analizador de agua en aceite (BS&W)',
+      desc: 'Mide en continuo el agua y sedimentos que todavía lleva el aceite recuperado. Si supera la especificación, ordena desviar el aceite de vuelta a TK-101.',
+      live: () => [['BS&W', prod() ? N(D().bsw, 2) + ' %' : '—'], ['Especificación', '< ' + N(SIM.sp.bswSpec, 1) + ' %'], ['Caudal de aceite', N(D().oilQ, 2) + ' m³/h']],
+      design: [['Principio', 'Microondas / capacitivo'], ['Rango', '0–10 % agua']]
+    },
+    'XV-401': {
+      name: 'Válvula de desvío de aceite',
+      desc: 'Envía el aceite a TK-401 si está en especificación. Si no lo está, lo devuelve a TK-101 para que se reprocese. Ningún aceite fuera de especificación llega al tanque de producto.',
+      live: () => [['Destino', S().divert ? 'Recirculación a TK-101' : 'TK-401 (producto)'], ['Aceite recirculado', N(S().tot.oilRec, 2) + ' m³']],
+      design: [['Tipo', 'Bola de 3 vías, actuador neumático']]
+    },
+    'TK-102': {
+      name: 'Cuba de fase pesada',
+      desc: 'Recibe el agua que sale por gravedad del decantador. La bomba P-102 la vacía cuando el nivel sube.',
+      live: () => [['Nivel', N(SIM.pct('tk102'), 0) + ' %'], ['Ingreso', N(D().watQ, 2) + ' m³/h']],
+      design: [['Volumen', '0,6 m³, acero inoxidable']]
+    },
+    'P-102': {
+      name: 'Bomba de transferencia de agua',
+      desc: 'Bomba centrífuga que lleva el agua separada a TK-402. Arranca con 70 % de nivel en TK-102 y para con 25 %.',
+      live: () => [['Estado', S().p102 ? 'En marcha, 8 m³/h' : 'Parada'], ['Nivel TK-102', N(SIM.pct('tk102'), 0) + ' %']],
+      design: [['Tipo', 'Centrífuga, 8 m³/h a 25 m'], ['Motor', '2,2 kW']]
+    },
+    'AT-402': {
+      name: 'Analizador de aceite en agua',
+      desc: 'Mide el aceite que se escapa con el agua (mg/L) y los sólidos en suspensión. Es la medida de qué tan limpia sale el agua hacia tratamiento o reinyección.',
+      live: () => [['Aceite en agua', prod() ? N(D().oiw, 0) + ' mg/L' : '—'], ['Sólidos en suspensión', prod() ? N(D().tss, 0) + ' mg/L' : '—']],
+      design: [['Principio', 'Fluorescencia UV'], ['Rango', '0–5.000 mg/L']]
+    },
+    'SC-501': {
+      name: 'Tornillo transportador de sólidos',
+      desc: 'Recibe la torta que descarga el decantador por la zona cónica y la saca del container hasta el volquete.',
+      live: () => [['Estado', S().screw ? 'En marcha' : 'Parado'], ['Torta', N(D().cakeKg / 1000, 2) + ' t/h'], ['Sólidos secos en la torta', prod() ? N(D().DS, 0) + ' %' : '—']],
+      design: [['Tipo', 'Inclinado 22°, Ø300 mm, inox'], ['Motor', '2,2 kW']]
+    },
+    'SK-501': {
+      name: 'Volquete de lodos',
+      desc: 'Contenedor abierto donde cae la torta de sólidos. Cuando se llena se retira con camión portavolquete para disposición final.',
+      live: () => [['Llenado', N(SIM.pct('skip'), 0) + ' %'], ['Torta acumulada', N(S().tot.cake, 2) + ' t']],
+      design: [['Capacidad', '10 m³'], ['Fuera del alcance', 'Provisto por el cliente']]
+    },
+    'TK-101': {
+      name: 'Tanque de acondicionamiento de slop',
+      desc: 'Recibe el slop de piletas, fondos de tanques o camiones y lo homogeneiza. El agitador mantiene los sólidos en suspensión y el serpentín lo precalienta para bajar la viscosidad. Está fuera del container.',
+      live: () => { const c = comp(); return [['Nivel', N(SIM.pct('tk101'), 0) + ' %  (' + N(S().lv.tk101, 1) + ' m³)'], ['Temperatura', N(SIM.feed.Ttank, 0) + ' °C'], ['Aceite / agua / sólidos', N(c.phiO * 100, 0) + ' / ' + N(c.phiW * 100, 0) + ' / ' + N(c.phiS * 100, 1) + ' %'], ['Ingreso de slop', SIM.feed.inflow ? '8 m³/h' : 'Cerrado']]; },
+      design: [['Volumen', '40 m³, Ø3,2 × 5,0 m'], ['Agitador', '5,5 kW, hélice de 3 palas'], ['Calefacción', 'Serpentín de aceite térmico']]
+    },
+    'TK-401': {
+      name: 'Tanque de aceite recuperado',
+      desc: 'Almacena el aceite tratado y en especificación hasta que se despacha. Es el producto que se vende o se reinyecta al circuito de crudo.',
+      live: () => [['Nivel', N(SIM.pct('tk401'), 0) + ' %'], ['Aceite recuperado (acumulado)', N(S().tot.oil, 2) + ' m³']],
+      design: [['Volumen', '40 m³']]
+    },
+    'TK-402': {
+      name: 'Tanque de agua separada',
+      desc: 'Recibe el agua del decantador. Sigue hacia la planta de tratamiento de agua o a pozos de reinyección.',
+      live: () => [['Nivel', N(SIM.pct('tk402'), 0) + ' %'], ['Agua (acumulado)', N(S().tot.water, 2) + ' m³']],
+      design: [['Volumen', '40 m³']]
+    },
+    'TK-201': {
+      name: 'IBC de demulsificante',
+      desc: 'Contenedor de 1.000 L con el demulsificante. El producto rompe la película que estabiliza las gotas de agua en el aceite para que se junten (coalescencia) y se separen. Tiene una dosis óptima: con exceso, la emulsión se vuelve a estabilizar.',
+      live: () => [['Nivel', N(SIM.pct('tk201'), 0) + ' %  (' + N(S().lv.tk201, 0) + ' L)'], ['Consumo acumulado', N(S().tot.demul, 1) + ' L']],
+      design: [['Envase', 'IBC 1.000 L, HDPE con jaula galvanizada']]
+    },
+    'P-201': {
+      name: 'Bomba dosificadora de demulsificante',
+      desc: 'Bomba de diafragma que inyecta el demulsificante en la descarga de P-101, antes del calentador, en proporción al caudal de alimentación.',
+      live: () => [['Dosis', N(SIM.sp.demul, 0) + ' ppm'], ['Caudal', N(SIM.fl.demul, 2) + ' L/h'], ['Estado', SIM.faults.demul ? 'Falla: sin caudal' : (SIM.fl.demul > 0 ? 'Dosificando' : 'Parada')]],
+      design: [['Tipo', 'Diafragma, 0–5 L/h, control por pulsos']]
+    },
+    'TK-301': {
+      name: 'Unidad de preparación de polímero',
+      desc: 'Disuelve polímero en polvo al 0,2 % en tres cámaras: mezcla, maduración y dosificación. El polímero (floculante) junta las partículas finas, como arcillas, en flóculos que el decantador sí puede capturar.',
+      live: () => [['Nivel', N(SIM.pct('tk301'), 0) + ' %'], ['Estado', S().prep ? 'Preparando lote' : 'En espera'], ['Polímero consumido', N(S().tot.poly, 2) + ' kg']],
+      design: [['Volumen', '1.000 L, inox, 3 cámaras'], ['Concentración', '0,2 % (2 g/L)']]
+    },
+    'P-301': {
+      name: 'Bomba dosificadora de polímero',
+      desc: 'Bomba de tornillo excéntrico que inyecta la solución de polímero en la entrada del decantador, junto con la alimentación.',
+      live: () => [['Dosis', N(SIM.sp.poly, 0) + ' g/m³'], ['Caudal de solución', N(SIM.fl.poly * 1000, 0) + ' L/h'], ['Estado', SIM.faults.poly ? 'Falla: sin caudal' : (SIM.fl.poly > 0 ? 'Dosificando' : 'Parada')]],
+      design: [['Tipo', 'Cavidad progresiva, 20–300 L/h']]
+    },
+    'CP-001': {
+      name: 'Sala eléctrica y de control',
+      desc: 'Área segura separada del área de proceso y presurizada. Aloja el centro de control de motores, los variadores, el PLC que ejecuta las secuencias y enclavamientos, y la pantalla de operación (HMI).',
+      live: () => [['Potencia eléctrica total', N(S().P.tot, 1) + ' kW'], ['Energía consumida', N(S().tot.kwh, 1) + ' kWh'], ['Estado', document.getElementById('stateTxt').textContent]],
+      design: [['Alimentación', '380 V / 50 Hz, 100 kVA'], ['Control', 'PLC con HMI de 15"']]
+    },
+    'EF-901': {
+      name: 'Ventilación y detección de gas',
+      desc: 'El área de proceso puede tener vapores de hidrocarburos. El extractor renueva el aire y los detectores de gas (AIT-901) avisan al 20 % del límite inferior de explosividad y paran todo al 40 %.',
+      live: () => [['Extractor', S().vent ? 'En marcha' : 'Parado'], ['Gas AIT-901', N(S().LEL, 1) + ' % LEL']],
+      design: [['Caudal', '20 renovaciones por hora'], ['Clasificación', 'Zona 2, equipos Ex']]
+    },
+    'AIT-901': { alias: 'EF-901' },
+    'N2-901': {
+      name: 'Inertización con nitrógeno',
+      desc: 'El slop caliente libera vapores inflamables dentro de la carcasa del decantador. Se barre con N₂ hasta bajar el oxígeno de 8 % antes de alimentar y se mantiene durante la operación.',
+      live: () => [['O₂ en la carcasa AIT-902', N(S().O2, 1) + ' %'], ['Barrido', S().purge ? 'Activo' : 'Inactivo']],
+      design: [['Fuente', 'Rack de cilindros o red de planta']]
+    },
+    'H-701': {
+      name: 'Calentador de aceite térmico',
+      desc: 'Servicio de planta que provee el aceite térmico caliente para E-101 y el serpentín de TK-101. Está fuera del alcance del módulo.',
+      live: () => [['Carga a E-101', N(S().duty, 0) + ' kW'], ['Estado', SIM.faults.heat ? 'Falla: sin circulación' : 'Disponible']],
+      design: [['Fluido', 'Aceite térmico 180/150 °C']]
+    },
+    'MR-101': {
+      name: 'Monorriel y escotilla de techo',
+      desc: 'Para el mantenimiento mayor el bowl se extrae por una escotilla en el techo con el aparejo del monorriel. Hay que dejar este espacio libre en el layout.',
+      live: () => [],
+      design: [['Capacidad', '2 t']]
+    },
+    'CNT': {
+      name: "Container ISO 40' High Cube",
+      desc: 'Todo el módulo viaja montado y probado dentro de un container estándar, listo para conectar en el yacimiento: alimentación eléctrica, aceite térmico, agua de lavado y las mangueras a los tanques.',
+      live: () => [['Potencia instalada en uso', N(S().P.tot, 1) + ' kW']],
+      design: [['Exterior', '12,19 × 2,44 × 2,90 m'], ['Interior', '12,03 × 2,35 × 2,70 m'], ['Peso operativo aprox.', '18 t']]
+    }
+  };
+  for (const k in INFO) if (INFO[k].alias) INFO[k] = Object.assign({ tagShown: k }, INFO[INFO[k].alias], { aliasOf: INFO[k].alias });
+})();
+
+// ===================== AYUDA DE ALARMAS: causa probable y qué hacer =====================
+(function () {
+  const st = () => SIM.st, sp = SIM.sp, fa = SIM.faults, feed = SIM.feed;
+  const dirty = () => { SIM.uiDirty = true; };
+  const qMaxHyd = () => 10 * st().n / 3600;
+  const qMaxHeat = () => {
+    const c = SIM.comp(), mcp = MODEL.rhoFeed(c, feed.Ttank) / 3600 * MODEL.cpMix(c);
+    return 250 / Math.max(1e-6, mcp * Math.max(1, sp.T - feed.Ttank));
+  };
+  const r1 = v => Math.max(1, Math.floor(v * 2) / 2);
+  const qOK = () => r1(Math.min(qMaxHeat() * 0.95, qMaxHyd() * 0.75, sp.Q * 0.9));
+  // acciones reutilizables
+  const A = {
+    fault: (k, label) => fa[k] ? [{ label: label || 'Quitar la falla simulada', fn: () => { if (fa[k]) SIM.toggleFault(k); } }] : [],
+    ship: { label: 'Despachar tanques y cambiar volquete', fn: () => SIM.ship() },
+    inflow: { label: 'Abrir ingreso de slop a TK-101', fn: () => { feed.inflow = true; dirty(); } },
+    resume: { label: 'Reanudar', fn: () => SIM.start() },
+    reset: { label: 'Reset disparo', fn: () => SIM.reset() },
+    basket: { label: 'Cambiar de canasto', fn: () => SIM.switchBasket() },
+    basketIf: () => SIM.st.clog[SIM.st.basket] > 0.5 ? [{ label: 'Cambiar de canasto', fn: () => SIM.switchBasket() }] : [],
+    q: v => ({ label: 'Bajar caudal a ' + N(v, 1) + ' m³/h', fn: () => { sp.Q = v; dirty(); } }),
+    T: v => ({ label: 'Temperatura a ' + N(v, 0) + ' °C', fn: () => { sp.T = v; dirty(); } }),
+    demul: { label: 'Demulsificante a 120 ppm', fn: () => { sp.demul = 120; dirty(); } },
+    iface: { label: 'HV-101 a 50 %', fn: () => { sp.iface = 50; dirty(); } },
+    autoTq: { label: 'Activar control de torque', fn: () => { sp.autoTq = true; dirty(); } },
+    dnUp: v => ({ label: 'Subir diferencial a ' + N(v, 0) + ' rpm', fn: () => { sp.autoTq = false; sp.dn = v; dirty(); } }),
+    rpm: { label: 'Bowl a 3.400 rpm', fn: () => { sp.n = 3400; dirty(); } }
+  };
+  const RECIRC = ' Mientras tanto XV-401 devuelve el aceite a TK-101, así que no llega aceite fuera de especificación al tanque de producto.';
+
+  // diagnóstico de la temperatura baja (lo usan varias alarmas)
+  function heatDiag() {
+    const s = st();
+    if (fa.heat) return { cause: 'No llega aceite térmico a E-101 (falla simulada), así que el slop entra frío al decantador.', todo: 'Quitá la falla. En una planta real: revisar el calentador H-701 y su bomba de circulación.', acts: A.fault('heat') };
+    if (s.duty >= 248) { const q = qOK(); return { cause: 'E-101 ya entrega todo su calor (250 kW) y no alcanza para este caudal.', todo: 'Bajá el caudal a ' + N(q, 1) + ' m³/h o menos, bajá la consigna de temperatura, o subí la temperatura de TK-101 con el serpentín.', acts: [A.q(q)] }; }
+    return { cause: 'El calentador todavía está llevando la temperatura a la consigna.', todo: 'Esperá: en uno o dos minutos llega. No hace falta hacer nada.', acts: [] };
+  }
+
+  function bswDiag() {
+    const s = st(), d = s.d;
+    if (fa.demul) return { cause: 'P-201 no está inyectando demulsificante (falla simulada). Sin él, las gotas de agua no se juntan y el decantador no las separa.', todo: 'Quitá la falla. El producto tarda 1 a 2 minutos en volver a hacer efecto.' + RECIRC, acts: A.fault('demul') };
+    if (fa.heat || s.Tout < sp.T - 8) { const h = heatDiag(); return { cause: 'Temperatura baja (' + N(s.Tout, 0) + ' °C): el aceite está más viscoso y las gotas de agua decantan más lento. ' + h.cause, todo: h.todo + RECIRC, acts: h.acts }; }
+    if (sp.demul < 60) return { cause: 'Poco demulsificante (' + N(sp.demul, 0) + ' ppm).', todo: 'Subí la dosis a unos 120 ppm.' + RECIRC, acts: [A.demul] };
+    if (sp.demul > 220) return { cause: 'Sobredosis de demulsificante (' + N(sp.demul, 0) + ' ppm): el exceso vuelve a estabilizar la emulsión.', todo: 'Bajá la dosis a unos 120 ppm.' + RECIRC, acts: [A.demul] };
+    if (d.btW > 0.01 || sp.iface < 20) return { cause: 'La interfaz está muy adentro (HV-101 al ' + N(sp.iface, 0) + ' %): sale agua por la salida de aceite.', todo: 'Llevá la contrapresión HV-101 a 40–60 %.' + RECIRC, acts: [A.iface] };
+    if (d.ov > 0.8) { const q = qOK(); return { cause: 'Caudal alto para el decantador (' + N(d.ov * 100, 0) + ' % de su capacidad hidráulica): el slop pasa muy rápido por el bowl.', todo: 'Bajá el caudal a ' + N(q, 1) + ' m³/h o menos.' + RECIRC, acts: [A.q(q)] }; }
+    if (s.n < 3200) return { cause: 'El bowl gira a ' + N(s.n, 0) + ' rpm: menos fuerza centrífuga.', todo: 'Subí la velocidad del bowl a 3.400 rpm.' + RECIRC, acts: [A.rpm] };
+    if (feed.api < 18) return { cause: 'Crudo pesado (' + N(feed.api, 0) + ' °API): muy viscoso aun caliente.', todo: 'Subí la temperatura a 90–95 °C y, si no alcanza, bajá el caudal.' + RECIRC, acts: [A.T(93), A.q(r1(sp.Q * 0.7))] };
+    if (sp.iface < 40) return { cause: 'La interfaz está algo adentro (HV-101 al ' + N(sp.iface, 0) + ' %).', todo: 'Subí un poco la contrapresión HV-101, a 50–60 %.' + RECIRC, acts: [A.iface] };
+    return { cause: 'Combinación de condiciones de operación.', todo: 'Probá, en este orden: subir la temperatura, bajar el caudal o ajustar el demulsificante cerca de 120 ppm.' + RECIRC, acts: [A.T(Math.min(95, sp.T + 5)), A.q(r1(sp.Q * 0.8))] };
+  }
+  function oiwDiag() {
+    const s = st(), d = s.d;
+    if (d.btO > 0.01 || sp.iface > 80) return { cause: 'La interfaz está muy afuera (HV-101 al ' + N(sp.iface, 0) + ' %): el aceite empieza a salir por la salida de agua.', todo: 'Bajá la contrapresión HV-101 a 40–60 %.', acts: [A.iface] };
+    if (fa.demul) return { cause: 'Sin demulsificante (falla simulada) también quedan más gotas de aceite en el agua.', todo: 'Quitá la falla.', acts: A.fault('demul') };
+    if (fa.heat || s.Tout < sp.T - 8) { const h = heatDiag(); return { cause: 'Temperatura baja: ' + h.cause, todo: h.todo, acts: h.acts }; }
+    if (d.ov > 0.8) { const q = qOK(); return { cause: 'Caudal alto para el decantador.', todo: 'Bajá el caudal a ' + N(q, 1) + ' m³/h o menos.', acts: [A.q(q)] }; }
+    return { cause: 'Separación justa para estas condiciones.', todo: 'Bajá un poco el caudal o subí la temperatura.', acts: [A.q(r1(sp.Q * 0.8))] };
+  }
+  function tqDiag(prefix = '') {
+    const s = st(), acts = [];
+    if (fa.slug) acts.push(...A.fault('slug', 'Terminar el golpe de sólidos'));
+    if (!sp.autoTq) acts.push(A.autoTq);
+    acts.push(A.dnUp(Math.min(30, Math.max(sp.dn, s.dn) + 6)));
+    const cause = fa.slug ? 'Entró un golpe de sólidos (lodo de fondo de tanque): el tornillo tiene que sacar mucha más torta.' : (!sp.autoTq ? 'Con el diferencial en manual (' + N(sp.dn, 1) + ' rpm) el tornillo saca los sólidos muy despacio y se acumulan en el bowl.' : 'Hay más sólidos de los que el tornillo alcanza a sacar.');
+    return { cause, todo: prefix + 'Activá el control automático de torque o subí la velocidad diferencial: más diferencial = el tornillo saca la torta más rápido y baja el torque.' + (fa.slug ? ' El golpe de sólidos pasa solo en unos minutos.' : ''), acts };
+  }
+
+  window.ALM_HELP = {
+    bsw: bswDiag, oiw: oiwDiag,
+    tl: () => { const h = heatDiag(); return { cause: h.cause, todo: h.todo + ' Si la temperatura sigue 15 °C abajo de la consigna durante 60 s, la planta vuelve sola a recirculación.', acts: h.acts }; },
+    pd: () => ({ cause: fa.clog ? 'El canasto en servicio se está tapando rápido (falla simulada de obstrucción).' : 'El canasto en servicio de F-101 se ensució con trapos y sólidos gruesos.', todo: (fa.clog ? 'Primero quitá la falla (si no, el canasto nuevo también se tapa) y ' : '') + 'cambiá al otro canasto. El sucio se limpia solo en 3 minutos. A 1,5 bar se corta la alimentación.', acts: [...A.fault('clog'), ...A.basketIf()] }),
+    vib: () => {
+      const s = st();
+      if (fa.unbal) return { cause: 'Simulaste un desbalanceo: sólidos pegados de forma despareja dentro del bowl.', todo: 'Quitá la falla y bajá un poco la velocidad del bowl. Si llega a 11 mm/s la máquina dispara. En la realidad: lavar el bowl y revisar rodamientos.', acts: [...A.fault('unbal'), { label: 'Bowl a 3.000 rpm', fn: () => { sp.n = 3000; dirty(); } }] };
+      if (s.n < 1200) return { cause: 'El bowl está pasando por su velocidad crítica (unas 750 rpm) durante el arranque o la parada.', todo: 'Es normal y dura unos segundos. No hace falta hacer nada.', acts: [] };
+      return { cause: 'Sobrecarga de sólidos o torque alto.', todo: 'Bajá el caudal y revisá el torque.', acts: [A.q(r1(sp.Q * 0.7))] };
+    },
+    tq: () => tqDiag(),
+    lel: () => ({ cause: fa.gas ? 'Hay una fuga de gas en el container (falla simulada).' : 'Hay vapores de hidrocarburo en el container.', todo: 'Quitá la falla. Si llega a 40 % LEL se para todo (parada de emergencia). En la realidad: no hacer trabajos en caliente, buscar la fuga y dejar actuar la ventilación.', acts: A.fault('gas') }),
+    o2: () => ({ cause: 'Todavía hay aire en la carcasa del decantador.', todo: 'Esperá unos segundos: el barrido con N₂ lo baja. Si no baja, revisar las botellas de N₂.', acts: [] }),
+    l101: () => ({ cause: 'Queda poco slop en TK-101.', todo: 'Abrí el ingreso de slop (camión o pileta) o reponé el tanque con el botón de logística. A 8 % se corta la alimentación.', acts: [A.inflow, A.ship] }),
+    l401: () => ({ cause: 'TK-401 se está llenando de aceite recuperado.', todo: 'Despachá el aceite. A 95 % se corta la alimentación.', acts: [A.ship] }),
+    l402: () => ({ cause: 'TK-402 se está llenando de agua separada.', todo: 'Despachá el agua a tratamiento. A 95 % se corta la alimentación.', acts: [A.ship] }),
+    lsk: () => ({ cause: 'El volquete se está llenando de torta.', todo: 'Cambiá el volquete. A 98 % se corta la alimentación.', acts: [A.ship] }),
+    l201: () => ({ cause: 'Queda poco demulsificante en el IBC.', todo: 'Reponé el IBC (el botón de logística también lo repone).', acts: [A.ship] }),
+    heat: () => { const q = qOK(); return { cause: 'E-101 entrega todo su calor (250 kW) y no alcanza la consigna con este caudal.', todo: 'Bajá el caudal a ' + N(q, 1) + ' m³/h, bajá la consigna de temperatura o subí la temperatura de TK-101.', acts: [A.q(q)] }; },
+    hloss: () => ({ cause: 'No circula aceite térmico por E-101 (falla simulada). La TCV abre al 100 % pero no calienta.', todo: 'Quitá la falla. Mientras tanto la temperatura cae y, si baja 15 °C, la planta vuelve sola a recirculación.', acts: A.fault('heat') }),
+    ovl: () => { const q = qOK(); return { cause: 'El caudal está cerca del límite hidráulico del bowl (' + N(qMaxHyd(), 1) + ' m³/h a esta velocidad).', todo: 'Bajá el caudal a ' + N(q, 1) + ' m³/h o subí la velocidad del bowl.', acts: [A.q(q)] }; },
+    fdem: () => ({ cause: 'La bomba de demulsificante P-201 no da caudal (falla simulada).', todo: 'Quitá la falla. En la realidad: revisar la válvula de pie, aire en el cabezal o el IBC vacío.', acts: A.fault('demul') }),
+    fpol: () => ({ cause: 'La bomba de polímero P-301 no da caudal (falla simulada). Sin floculante, los finos se van con el agua.', todo: 'Quitá la falla. En la realidad: revisar la unidad de preparación y la bomba.', acts: A.fault('poly') }),
+    bt: () => ({ cause: st().d.btO > 0.01 ? 'La contrapresión HV-101 está muy alta: la interfaz llegó a la salida de agua.' : 'La contrapresión HV-101 está muy baja: la interfaz llegó a la salida de aceite.', todo: 'Llevá HV-101 a 40–60 %.', acts: [A.iface] }),
+    // cortes de alimentación
+    hold_LSLL: () => ({ cause: 'TK-101 casi vacío: la bomba se quedaría sin succión.', todo: 'Abrí el ingreso de slop o reponé TK-101. Con más de 12 % de nivel, tocá Reanudar.', acts: [A.inflow, A.ship, A.resume] }),
+    hold_PD: () => ({ cause: 'El filtro F-101 está tapado (ΔP mayor a 1,5 bar).', todo: (fa.clog ? 'Quitá la falla de obstrucción, ' : '') + 'cambiá de canasto y tocá Reanudar.', acts: [...A.fault('clog'), ...A.basketIf(), A.resume] }),
+    hold_L401: () => ({ cause: 'TK-401 lleno.', todo: 'Despachá y tocá Reanudar.', acts: [A.ship, A.resume] }),
+    hold_L402: () => ({ cause: 'TK-402 lleno.', todo: 'Despachá y tocá Reanudar.', acts: [A.ship, A.resume] }),
+    hold_LSK: () => ({ cause: 'Volquete lleno.', todo: 'Cambiá el volquete y tocá Reanudar.', acts: [A.ship, A.resume] }),
+    hold_L102: () => ({ cause: 'La cuba TK-102 rebalsa: entra más agua de la que P-102 puede sacar.', todo: 'Bajá el caudal y tocá Reanudar.', acts: [A.q(r1(sp.Q * 0.7)), A.resume] }),
+    hold_TQH: () => { const t = tqDiag(); return { cause: 'El torque del tornillo pasó 95 %: se cortó la alimentación para que el bowl se vacíe. ' + t.cause, todo: t.todo + ' Cuando el torque baje de 85 %, tocá Reanudar.', acts: [...t.acts, A.resume] }; },
+    // disparos
+    trip_VSHH: () => ({ cause: 'Vibración mayor a 11 mm/s: el decantador se detuvo para protegerse.', todo: (fa.unbal ? 'Quitá la falla de desbalanceo. ' : '') + 'Esperá a que el bowl frene y la vibración baje de 6 mm/s, tocá Reset disparo y después Arrancar.', acts: [...A.fault('unbal'), A.reset] }),
+    trip_TQ: () => { const t = tqDiag(); return { cause: 'Torque mayor a 110 %: el decantador se detuvo. ' + t.cause, todo: 'Corregí el torque como se indica, tocá Reset disparo y después Arrancar. ' + t.todo, acts: [...t.acts, A.reset] }; },
+    trip_ESD: () => ({ cause: 'Gas al 40 % LEL: parada de emergencia de toda la planta.', todo: (fa.gas ? 'Quitá la falla de gas. ' : '') + 'Esperá a que la ventilación baje el gas a menos de 10 % LEL, tocá Reset disparo y después Arrancar.', acts: [...A.fault('gas'), A.reset] })
+  };
+  ALM_HELP.hold_TQ = ALM_HELP.hold_TQH;
+})();
+
+// ===================== ESCENARIOS "¿QUÉ PASA SI…?" =====================
+(function () {
+  const st = () => SIM.st, sp = SIM.sp, fa = SIM.faults, feed = SIM.feed;
+  const DEF = { Q: 5, T: 85, n: 3400, iface: 50, demul: 120, poly: 40, autoTq: true };
+  const on = k => { if (!fa[k]) SIM.toggleFault(k); }, off = k => { if (fa[k]) SIM.toggleFault(k); };
+  const m = () => st().mode, d = () => st().d;
+  const divLine = () => st().divert ? ['Como el aceite sale fuera de especificación, la válvula XV-401 lo devuelve a TK-101 en vez de mandarlo al tanque de producto.'] : [];
+
+  window.SCEN = [
+    {
+      id: 'filtro', title: 'Se tapa el filtro', sub: 'Trapos y piedras en F-101', focus: 'F-101',
+      start() { on('clog'); },
+      lines() {
+        const s = st(), L = [];
+        if (m() === 'HOLD') { L.push('Con 1,5 bar de caída de presión se cortó la alimentación para proteger la bomba P-101.', 'El decantador sigue girando, listo para seguir apenas se resuelva.'); }
+        else { L.push('El canasto ' + s.basket + ' se va llenando de trapos y sólidos gruesos, y la caída de presión sube.'); if (s.dp > 0.6) L.push('Ya pasó 0,6 bar: saltó la alarma. A 1,5 bar se corta la alimentación.'); }
+        return L;
+      },
+      live: () => [['Caída de presión en F-101', N(st().dp, 2) + ' bar'], ['Caudal de P-101', N(st().q, 1) + ' m³/h']],
+      why: 'Un filtro tapado deja a la bomba sin caudal y la puede romper. Por eso el filtro es doble: se pasa al canasto limpio sin parar la planta.',
+      fixTitle: () => m() === 'HOLD' ? 'Cambiar de canasto y reanudar' : 'Cambiar de canasto', fixHow: () => 'Se pasa al canasto limpio con la palanca del filtro y se limpia el sucio' + (m() === 'HOLD' ? '. Después se reanuda la alimentación.' : ', sin parar la planta.'),
+      fix() { off('clog'); if (st().clog[st().basket] > 0.3) SIM.switchBasket(); },
+      ok: () => m() === 'RUN' && st().dp < 0.6
+    },
+    {
+      id: 'calor', title: 'Falla la calefacción', sub: 'Sin aceite térmico en E-101', focus: 'E-101',
+      start() { on('heat'); },
+      lines() {
+        const s = st(), L = ['Deja de circular aceite térmico por el calentador E-101 y el slop entra cada vez más frío al decantador.'];
+        if (SIM.producing) L.push('Frío, el aceite es más viscoso y las gotas de agua decantan más lento: el aceite empieza a salir con agua.');
+        L.push(...divLine());
+        if (m() === 'START') L.push('Con 15 °C menos que la consigna, la planta dejó de alimentar el decantador y recircula el slop a TK-101 hasta recuperar la temperatura.');
+        return L;
+      },
+      live: () => [['Temperatura de entrada', N(st().Tout, 0) + ' °C (consigna 85 °C)'], ['Viscosidad del aceite', N(MODEL.muOil(feed.api, st().Tout), 0) + ' mPa·s'], ['Agua en el aceite', SIM.producing ? N(d().bsw, 2) + ' %' : '—']],
+      why: 'La temperatura es lo que más influye en la separación: a 45 °C el aceite es unas cuatro veces más viscoso que a 85 °C.',
+      fixTitle: 'Restablecer el aceite térmico', fixHow: 'Se repara el servicio de aceite térmico. La planta recalienta en recirculación y vuelve sola a producción.',
+      fix() { off('heat'); },
+      ok: () => m() === 'RUN' && st().Tout > 80 && !st().divert
+    },
+    {
+      id: 'demul', title: 'Se corta el demulsificante', sub: 'Falla la bomba P-201', focus: 'P-201',
+      start() { on('demul'); },
+      lines() {
+        const L = ['La bomba P-201 deja de inyectar demulsificante y el producto que quedaba en la línea se va consumiendo.'];
+        if (d().bsw > 0.6) L.push('Sin él, las gotas de agua no se juntan, quedan atrapadas en el aceite y el decantador no las puede separar.');
+        L.push(...divLine());
+        return L;
+      },
+      live: () => [['Agua en el aceite', N(d().bsw, 2) + ' % (máximo 1 %)'], ['Destino del aceite', st().divert ? 'vuelve a TK-101' : 'TK-401']],
+      why: 'El demulsificante rompe la película que rodea cada gota de agua para que se unan entre sí. Gotas más grandes se separan mucho más fácil.',
+      fixTitle: 'Reponer la dosificación', fixHow: 'Se repara la bomba dosificadora. El aceite tarda un par de minutos en volver a especificación.',
+      fix() { off('demul'); },
+      ok: () => m() === 'RUN' && !st().divert && d().bsw < 1
+    },
+    {
+      id: 'poly', title: 'Se corta el polímero', sub: 'Falla la dosificación P-301', focus: 'TK-301',
+      start() { on('poly'); },
+      lines: () => ['La bomba P-301 deja de dosificar floculante.', 'Las partículas finas, como las arcillas, ya no se aglomeran y se escapan con el agua.'],
+      live: () => [['Sólidos en el agua', N(d().tss, 0) + ' mg/L'], ['Captura de sólidos', N(d().Es, 1) + ' %']],
+      why: 'Los finos miden pocos micrones: ni a 3.000 g llegan a separarse solos. El polímero los junta en flóculos más grandes.',
+      fixTitle: 'Reponer la dosificación', fixHow: 'Se repara la dosificación de polímero y la captura de sólidos vuelve a su valor normal.',
+      fix() { off('poly'); },
+      ok: () => m() === 'RUN' && d().Es > 97.5
+    },
+    {
+      id: 'slug', title: 'Llega un golpe de sólidos', sub: 'Lodo de fondo de tanque', focus: 'X-101',
+      start() { on('slug'); },
+      lines() {
+        const s = st(), L = ['Entra lodo de fondo de tanque: los sólidos en la alimentación pasan de 5 % a 13 %.'];
+        L.push('El tornillo tiene que sacar mucha más torta y sube el torque. El control automático acelera el tornillo para que no se trabe.');
+        if (s.tq > 85) L.push('El torque está alto: si llega a 95 % se corta la alimentación.');
+        return L;
+      },
+      live: () => [['Torque del tornillo', N(st().tq, 0) + ' %'], ['Diferencial del tornillo', N(st().dn, 1) + ' rpm (normal 8)'], ['Torta', N(d().cakeKg / 1000, 2) + ' t/h']],
+      why: 'Si el tornillo no alcanza a sacar los sólidos, se acumulan en el bowl hasta trabarlo. A 110 % de torque el decantador se detiene.',
+      fixTitle: 'Bajar el caudal hasta que pase', fixHow: 'Se baja la alimentación a 3 m³/h mientras pasa el lodo y después se vuelve al caudal de diseño.',
+      fix() { sp.Q = 3; },
+      ok: () => m() === 'RUN' && !fa.slug && st().tq < 75
+    },
+    {
+      id: 'unbal', title: 'Se desbalancea el bowl', sub: 'Sólidos pegados de forma despareja', focus: 'X-101',
+      start() { on('unbal'); },
+      lines() {
+        const L = ['Se pegan sólidos de forma despareja dentro del bowl y el decantador empieza a vibrar.'];
+        if (m() === 'TRIP') L.push('Con 11 mm/s el decantador se detuvo para protegerse: se corta la alimentación y el bowl frena.');
+        else if (st().vib > 7.1) L.push('Ya pasó 7,1 mm/s: saltó la alarma. A 11 mm/s la máquina se detiene.');
+        return L;
+      },
+      live: () => [['Vibración', N(st().vib, 1) + ' mm/s'], ['Velocidad del bowl', N(st().n, 0) + ' rpm']],
+      why: 'A 3.400 rpm, unos pocos gramos fuera de lugar generan fuerzas enormes sobre los rodamientos.',
+      fixTitle: () => m() === 'TRIP' ? 'Lavar el bowl y volver a arrancar' : 'Lavar el bowl en marcha', fixHow: () => m() === 'TRIP' ? 'Se espera a que el bowl frene, se lava, se resetea el disparo y se repite la secuencia de arranque.' : 'Se inyecta agua caliente en marcha para despegar los sólidos y la vibración baja antes de que la máquina se detenga.',
+      fix() { off('unbal'); },
+      ok: () => m() === 'RUN' && st().vib < 4.5
+    },
+    {
+      id: 'gas', title: 'Hay una fuga de gas', sub: 'Vapores en el container', focus: 'EF-901',
+      start() { on('gas'); },
+      lines() {
+        const L = ['Aparecen vapores de hidrocarburo dentro del container y los detectores de gas los miden.'];
+        if (m() === 'TRIP') L.push('Al 40 % del límite de explosividad se activó la parada de emergencia: se detiene todo y solo sigue la ventilación.');
+        else if (st().LEL > 20) L.push('Ya pasó 20 %: saltó la alarma. Al 40 % se para toda la planta.');
+        return L;
+      },
+      live: () => [['Gas (% del límite inferior de explosividad)', N(st().LEL, 0) + ' %']],
+      why: 'El slop caliente libera vapores inflamables. Por eso el container tiene ventilación forzada, detectores de gas y equipos a prueba de explosión.',
+      fixTitle: () => m() === 'TRIP' ? 'Reparar la fuga y rearrancar' : 'Reparar la fuga', fixHow: () => m() === 'TRIP' ? 'Se repara la fuga, la ventilación limpia el aire, se resetea la parada de emergencia y se rearranca.' : 'Se repara la fuga y la ventilación limpia el aire antes de llegar a la parada de emergencia.',
+      fix() { off('gas'); },
+      ok: () => m() === 'RUN' && st().LEL < 10
+    },
+    {
+      id: 'iface', title: 'Se desajusta la interfaz', sub: 'HV-101 abierta de más', focus: 'HV-101',
+      start() { sp.iface = 92; },
+      lines() {
+        const L = ['Alguien sube de más la contrapresión en la salida de aceite (HV-101).', 'Dentro del bowl, el límite entre el aceite y el agua se corre hacia afuera.'];
+        if (d().btO > 0.01) L.push('Llegó a la salida de agua: el aceite se está yendo con el agua. Abrí el decantador para ver cómo se movieron los anillos.');
+        return L;
+      },
+      live: () => [['Aceite en el agua', N(d().oiw, 0) + ' mg/L (normal ≈ 125)'], ['Recuperación de aceite', N(d().rec, 1) + ' %']],
+      why: 'La posición de la interfaz define qué tan limpia sale cada fase. Si se corre demasiado, una fase sale por la salida de la otra.',
+      fixTitle: 'Volver HV-101 a su ajuste', fixHow: 'Se devuelve la válvula de contrapresión a su ajuste normal y la interfaz vuelve a su lugar.',
+      fix() { sp.iface = 50; },
+      ok: () => m() === 'RUN' && d().oiw < 1000 && d().btO < 0.01
+    },
+    {
+      id: 'caudal', title: 'Se manda más caudal', sub: '9 m³/h en vez de 5', focus: 'P-101',
+      start() { sp.Q = 9; },
+      lines() {
+        const s = st(), L = ['La bomba P-101 pasa de 5 a 9 m³/h.'];
+        if (s.duty > 245) L.push('El calentador ya da sus 250 kW y no alcanza a calentar tanto caudal.');
+        if (SIM.producing && d().ov > 0.85) L.push('El slop pasa más rápido por el bowl y no llega a separarse: el aceite sale con agua.');
+        L.push(...divLine());
+        return L;
+      },
+      live: () => [['Caudal', N(st().q, 1) + ' m³/h'], ['Temperatura de entrada', N(st().Tout, 0) + ' °C'], ['Agua en el aceite', SIM.producing ? N(d().bsw, 2) + ' %' : '—']],
+      why: 'Cada equipo tiene un caudal de diseño. Más caudal no es más producción si el aceite sale fuera de especificación y hay que reprocesarlo.',
+      fixTitle: 'Volver al caudal de diseño', fixHow: 'Se baja la bomba a 5 m³/h; la temperatura y la calidad del aceite se recuperan en unos minutos.',
+      fix() { sp.Q = 5; },
+      ok: () => m() === 'RUN' && !st().divert && d().bsw < 1
+    },
+    {
+      id: 'tk101', title: 'Se vacía el tanque de slop', sub: 'TK-101 sin alimentación', focus: 'TK-101',
+      start() { st().lv.tk101 = 3.45; feed.inflow = false; },
+      lines() {
+        const L = ['Se terminó el slop en TK-101 y el nivel baja.'];
+        if (m() === 'HOLD') L.push('Al 8 % se cortó la alimentación para que la bomba no trabaje en seco. El decantador sigue girando.');
+        return L;
+      },
+      live: () => [['Nivel de TK-101', N(SIM.pct('tk101'), 1) + ' % (corte a 8 %)']],
+      why: 'Una bomba de tornillo excéntrico que gira en seco quema su estator de goma en pocos minutos.',
+      fixTitle: () => m() === 'HOLD' ? 'Recargar TK-101 y reanudar' : 'Recargar TK-101', fixHow: () => 'Se descarga un camión de slop en TK-101' + (m() === 'HOLD' ? ' y se reanuda la alimentación.' : ' antes de que se corte la alimentación.'),
+      fix() { st().lv.tk101 = 32; },
+      ok: () => m() === 'RUN'
+    }
+  ];
+
+  const S = window.SCN = { sc: null, phase: 'idle', pendT: 0, tick: 0, doneT: 0, val: x => typeof x === 'function' ? x() : x };
+  function restore() { Object.assign(sp, { Q: DEF.Q, T: DEF.T, n: DEF.n, iface: DEF.iface, demul: DEF.demul, poly: DEF.poly, autoTq: DEF.autoTq }); }
+  function activate(sc) {
+    S.sc = sc; S.phase = 'active'; sc.start && sc.start();
+    SIM.event('Situación simulada: ' + sc.title, 'warn');
+    SIM.focus && SIM.focus(sc.focus, true);
+  }
+  SCN.trigger = function (id) {
+    if (S.phase === 'active' || S.phase === 'fixing') return;
+    const sc = SCEN.find(x => x.id === id); if (!sc) return;
+    if (st().mode === 'RUN') { activate(sc); return; }
+    S.sc = sc; S.phase = 'pending'; S.pendT = 0;
+    if (['STOP', 'COAST'].includes(st().mode)) SIM.start();
+    SIM.focus && SIM.focus(sc.focus, false);
+  };
+  SCN.fix = function () {
+    if (S.phase !== 'active') return;
+    const title = SCN.val(S.sc.fixTitle);
+    S.sc.fix(); S.phase = 'fixing'; S.tick = 0;
+    SIM.event('Corrección: ' + title);
+  };
+  SCN.cancel = function () {
+    if (S.phase === 'idle') return;
+    for (const k in fa) off(k);
+    restore(); S.sc = null; S.phase = 'idle'; SIM.focus && SIM.focus(null);
+  };
+  SCN.progress = function () {
+    const s = st();
+    if (s.mode === 'TRIP') return 'Esperando condiciones seguras para resetear el disparo: vibración ' + N(s.vib, 1) + ' mm/s, gas ' + N(s.LEL, 0) + ' %.';
+    if (s.mode === 'COAST' || s.mode === 'STOP') return 'Disparo reseteado. Volviendo a arrancar.';
+    if (s.mode === 'START') return s.step === 1 ? 'Rearrancando: inertizando con N₂.' : 'Rearrancando: bowl a ' + N(s.n, 0) + ' rpm y slop a ' + N(s.Tout, 0) + ' °C.';
+    if (s.mode === 'HOLD') return 'Reanudando la alimentación.';
+    if (s.mode === 'FLUSH') return 'Lavando el bowl.';
+    return 'En producción. Esperando que todo vuelva a valores normales.';
+  };
+
+  // situación sin escenario (por ejemplo, un tanque que se llenó): se arma con la ayuda de alarmas
+  function generic() {
+    const s = st();
+    let key = null;
+    if (s.trip) key = 'trip_' + s.trip.key; else if (s.hold) key = 'hold_' + s.hold.key;
+    else for (const [k, a] of SIM.alarms) if (a.sev === 'alarm' && window.ALM_HELP && ALM_HELP[k]) { key = k; break; }
+    if (!key || !ALM_HELP[key]) return null;
+    const a = SIM.alarms.get(key) || {}, h0 = ALM_HELP[key](), s0 = s;
+    return {
+      id: 'gen', generic: true, title: (a.tag ? a.tag + ': ' : '') + (a.msg || 'situación anormal').replace(/^(DISPARO|Corte de alimentación): /, ''), focus: null,
+      lines: () => [ALM_HELP[key] ? ALM_HELP[key]().cause : h0.cause], live: () => [],
+      why: (s.trip || s.hold) ? 'Es una protección automática: la planta corta antes de que algo se dañe o se derrame.' : 'La alarma avisa antes de que el problema afecte la operación.',
+      fixTitle: 'Resolver y volver a producción', fixHow: 'El botón aplica la corrección y la planta vuelve sola a producción.',
+      fix() { (ALM_HELP[key] ? ALM_HELP[key]() : h0).acts.filter(x => !/^(Reanudar|Reset)/.test(x.label)).forEach(x => x.fn()); },
+      ok: () => st().mode === 'RUN' && ![...SIM.alarms.values()].some(x => x.sev === 'alarm')
+    };
+  }
+
+  SCN.update = function (dt) {
+    const s = st();
+    if (S.phase === 'pending') {
+      if (s.mode === 'RUN') { S.pendT += dt; if (S.pendT > 1.5) activate(S.sc); }
+      else if (['STOP', 'COAST'].includes(s.mode)) SIM.start();
+    } else if (S.phase === 'fixing') {
+      S.tick += dt;
+      if (S.tick > 0.4) {
+        S.tick = 0;
+        if (s.mode === 'TRIP') SIM.reset();
+        else if (['HOLD', 'STOP', 'COAST'].includes(s.mode)) SIM.start();
+        if (S.sc.ok()) {
+          S.phase = 'done'; S.doneT = 0; restore(); SIM.ack();
+          SIM.event('Resuelto: ' + S.sc.title);
+          SIM.focus && SIM.focus(null);
+        }
+      }
+    } else if (S.phase === 'done') {
+      S.doneT += dt; if (S.doneT > 6) { S.phase = 'idle'; S.sc = null; }
+    } else if (S.phase === 'idle') {
+      if (s.mode === 'HOLD' || s.mode === 'TRIP' || [...SIM.alarms.values()].some(x => x.sev === 'alarm')) {
+        const g = generic(); if (g) { S.sc = g; S.phase = 'active'; }
+      }
+    }
+  };
+})();
+
+// ===================== INTERFAZ (modo presentación) =====================
+(function () {
+  const $ = id => document.getElementById(id);
+  const st = () => SIM.st, d = () => SIM.st.d;
+  const hms = t => { t = Math.floor(t); const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60; return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0'); };
+  const MODE_TXT = { STOP: 'Parado', START: 'Arrancando', RUN: 'Producción', HOLD: 'Alimentación cortada', FLUSH: 'Lavado', COAST: 'Deteniendo', TRIP: 'Disparo' };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  // ---------- velocidad (por defecto ×10) ----------
+  SIM.speed = 10;
+  const spBtns = { 1: $('sp1'), 10: $('sp10'), 60: $('sp60') };
+  for (const k in spBtns) spBtns[k].onclick = () => { SIM.speed = +k; for (const j in spBtns) spBtns[j].setAttribute('aria-pressed', j === k ? 'true' : 'false'); };
+
+  // ---------- operación ----------
+  $('bStart').onclick = () => SIM.start();
+  $('bStop').onclick = () => { SCN.cancel(); SIM.stop(); };
+  $('bRestart').onclick = () => { SCN.cancel(); SIM.restart(); SIM.hideInfo(); SIM.resetView && SIM.resetView(); };
+
+  // ---------- leyenda ----------
+  const LEG = [['Slop', '--slop'], ['Slop caliente', '--hot'], ['Aceite', '--oil'], ['Agua', '--water'], ['Sólidos', '--solids'], ['Demulsificante', '--demul'], ['Polímero', '--poly'], ['Aceite térmico', '--heat'], ['Agua de lavado', '--flush']];
+  $('legend').innerHTML = LEG.map(([t, v]) => `<span><i style="background:var(${v})"></i>${t}</span>`).join('');
+
+  // ---------- indicadores: lo que entra y lo que sale ----------
+  const P = () => SIM.producing;
+  const KPI = [
+    ['Entrada de slop', () => [N(st().q, 1), 'm³/h', 'a ' + N(st().Tout, 0) + ' °C', st().q > 0.05 ? 'ok' : '']],
+    ['Decantador', () => [N(st().n, 0), 'rpm', N(d().G, 0) + ' g · torque ' + N(st().tq, 0) + ' %', st().vib > 7.1 || st().tq > 95 ? 'alarm' : st().vib > 4.5 || st().tq > 80 ? 'warn' : st().n > 50 ? 'ok' : '']],
+    ['Aceite recuperado', () => P() ? [N(d().oilQ, 2), 'm³/h', 'agua ' + N(d().bsw, 2) + ' % · ' + (st().divert ? 'vuelve a TK-101' : 'a TK-401'), d().bsw > 2 ? 'alarm' : d().bsw > 1 ? 'warn' : 'ok'] : ['—', 'm³/h', 'agua en el aceite < 1 %', '']],
+    ['Agua separada', () => P() ? [N(d().watQ, 2), 'm³/h', 'aceite ' + N(d().oiw, 0) + ' mg/L', d().oiw > 2000 ? 'alarm' : d().oiw > 1000 ? 'warn' : 'ok'] : ['—', 'm³/h', 'aceite en el agua < 1.000 mg/L', '']],
+    ['Torta de sólidos', () => P() ? [N(d().cakeKg / 1000, 2), 't/h', 'captura ' + N(d().Es, 1) + ' % · ' + N(d().DS, 0) + ' % secos', d().Es < 93 ? 'alarm' : d().Es < 97 ? 'warn' : 'ok'] : ['—', 't/h', 'al volquete SK-501', '']],
+    ['Recuperación de aceite', () => P() ? [N(d().rec, 1), '%', 'del aceite que entra', d().rec < 85 ? 'alarm' : d().rec < 93 ? 'warn' : 'ok'] : ['—', '%', 'del aceite que entra', '']]
+  ];
+  const kbox = $('kpis');
+  KPI.forEach((k, i) => { const e = document.createElement('div'); e.className = 'kpi'; e.id = 'k' + i; e.innerHTML = `<div class="l">${k[0]}</div><div class="v">—</div><div class="s"></div>`; kbox.appendChild(e); });
+
+  // ---------- escenarios ----------
+  const sbox = $('scns');
+  SCEN.forEach(sc => { const b = document.createElement('button'); b.className = 'scn'; b.id = 'sc_' + sc.id; b.innerHTML = `${esc(sc.title)}<small>${esc(sc.sub)}</small>`; b.onclick = () => SCN.trigger(sc.id); sbox.appendChild(b); });
+
+  // ---------- tarjeta de situación y banner ----------
+  const sit = $('sit'), banner = $('banner'), view = $('view');
+  let sitSig = '';
+  function renderSituation() {
+    const S = SCN, sc = S.sc, ph = S.phase;
+    const show = sc && ph !== 'idle';
+    sit.hidden = !show; banner.hidden = !show; view.classList.toggle('has-banner', !!show);
+    if (!show) { sitSig = ''; return; }
+    const lines = ph === 'pending' ? ['La planta está arrancando. La situación se va a simular cuando llegue a producción.'] : sc.lines();
+    const live = ph === 'pending' ? [] : sc.live();
+    const eyb = ph === 'fixing' ? 'Corrigiendo' : ph === 'done' ? 'Resuelto' : ph === 'pending' ? 'Preparando' : (sc.generic ? 'Situación anormal' : 'Situación simulada');
+    const prog = ph === 'fixing' ? SCN.progress() : '';
+    const sig = JSON.stringify([ph, sc.id, sc.title, lines, live, prog, SCN.val(sc.fixTitle)]);
+    if (sig === sitSig) return; sitSig = sig;
+    sit.className = 'sec sit' + (ph === 'fixing' ? ' fixing' : ph === 'done' ? ' done' : '');
+    banner.className = 'banner' + (ph === 'fixing' ? ' fixing' : ph === 'done' ? ' done' : '');
+    sit.innerHTML = `<div class="eyb">${eyb}</div><h3>${esc(sc.title)}</h3>
+      ${ph === 'done' ? '<div class="blk">La planta volvió a producción normal.</div>' : `
+      <div class="blk"><span>Qué está pasando</span><ul>${lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul></div>
+      ${live.length ? `<div class="blk live">${live.map(([a, b]) => `<div>${esc(a)}: <b>${esc(b)}</b></div>`).join('')}</div>` : ''}
+      ${ph !== 'pending' ? `<div class="blk"><span>${sc.generic ? 'Para qué sirve' : 'Por qué importa'}</span>${esc(sc.why)}</div>` : ''}
+      ${ph === 'active' ? `<div class="blk"><span>Cómo se corrige</span>${esc(SCN.val(sc.fixHow))}</div><button class="btn pri fix" data-fix="1">${esc(SCN.val(sc.fixTitle))}</button>` : ''}
+      ${ph === 'fixing' ? `<div class="blk"><span>Corrigiendo</span>${esc(prog)}</div>` : ''}`}`;
+    banner.innerHTML = `<span class="dot"></span><span>${ph === 'fixing' ? 'Corrigiendo: ' : ph === 'done' ? 'Resuelto: ' : ''}${esc(sc.title)}</span>${ph === 'active' ? `<button class="btn pri sm" data-fix="1">${esc(SCN.val(sc.fixTitle))}</button>` : ''}`;
+  }
+  for (const el of [sit, banner]) el.addEventListener('click', e => { if (e.target.closest('[data-fix]')) SCN.fix(); });
+
+  // ---------- secuencia ----------
+  function stepsHTML() {
+    const s = st(), sp = SIM.sp;
+    let name, items;
+    const accelOK = s.n >= sp.n * 0.97, heatOK = s.Tout >= sp.T - 3 && s.q >= sp.Q * 0.9;
+    if (['FLUSH', 'COAST', 'TRIP'].includes(s.mode)) {
+      name = s.mode === 'TRIP' ? 'Disparo: parada sin lavado' : 'Secuencia de parada';
+      const fl = s.mode === 'FLUSH';
+      items = [
+        ['Corte de alimentación y químicos', 'done', ''],
+        [s.mode === 'TRIP' ? 'Lavado (se omite por el disparo)' : 'Lavado con agua caliente', fl ? 'act' : 'done', fl ? N(Math.max(0, 120 - s.stepT), 0) + ' s' : ''],
+        ['Frenado del bowl', fl ? '' : 'act', fl ? '' : N(s.n, 0) + ' rpm'],
+        ['Parado', '', '']
+      ];
+    } else {
+      name = 'Secuencia de arranque';
+      const m = s.mode, inS = m === 'START', run = m === 'RUN', hold = m === 'HOLD';
+      items = [
+        ['Verificación de permisivos', m === 'STOP' ? '' : 'done', ''],
+        ['Inertización con N₂', inS && s.step === 1 ? 'act' : (m === 'STOP' ? '' : 'done'), (inS || run || hold) ? 'O₂ ' + N(s.O2, 1) + ' %' : ''],
+        ['Aceleración del bowl', inS && s.step === 2 && !accelOK ? 'act' : ((inS && s.step === 2) || run || hold ? 'done' : ''), m !== 'STOP' ? N(s.n, 0) + ' / ' + N(sp.n, 0) + ' rpm' : ''],
+        ['Precalentamiento en recirculación', inS && s.step === 2 && !heatOK ? 'act' : (run || hold || (inS && s.step === 2 && heatOK) ? 'done' : ''), m !== 'STOP' ? N(s.Tout, 0) + ' / ' + N(sp.T, 0) + ' °C' : ''],
+        [hold ? 'Producción (alimentación cortada)' : 'Producción', run || hold ? 'act' : '', run ? N(s.q, 1) + ' m³/h' : '']
+      ];
+    }
+    $('seqName').textContent = name;
+    return items.map(([t, c, v]) => `<li class="${c}"><span class="m"></span><span>${t}</span><span class="v">${v}</span></li>`).join('');
+  }
+
+  // ---------- ficha de equipo ----------
+  const card = $('card');
+  let cardTag = null;
+  SIM.selectListeners = [];
+  SIM.showInfo = function (tag) {
+    const inf = INFO[tag];
+    if (!inf) return;
+    cardTag = tag;
+    const shown = inf.aliasOf ? inf.aliasOf : tag;
+    card.innerHTML = `<button class="x" aria-label="Cerrar ficha" id="cardX">×</button>
+      <div class="tag">${tag}${inf.aliasOf ? ' · parte de ' + inf.aliasOf : ''}</div><h3>${inf.name}</h3><p>${inf.desc}</p>
+      <h4>En vivo</h4><dl class="kv" id="cardLive"></dl>
+      <h4>Datos de diseño</h4><dl class="kv">${inf.design.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
+    card.hidden = false;
+    $('cardX').onclick = () => SIM.hideInfo();
+    refreshCard();
+    SIM.selectListeners.forEach(f => f(shown));
+  };
+  SIM.hideInfo = function () { card.hidden = true; cardTag = null; SIM.selectListeners.forEach(f => f(null)); };
+  function refreshCard() {
+    if (!cardTag) return;
+    const rows = INFO[cardTag].live();
+    const el = $('cardLive');
+    if (el) el.innerHTML = rows.length ? rows.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('') : '<dt>Sin variables de proceso</dt><dd></dd>';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && cardTag) SIM.hideInfo(); });
+
+  setTimeout(() => { const l = $('loading'); if (l && !l.hidden) l.textContent = 'No se pudo cargar el modelo 3D. Necesita conexión a cdn.jsdelivr.net; el panel sigue funcionando.'; }, 15000);
+
+  // ---------- refresco ----------
+  let acc = 0, accT = 0;
+  SIM.onFrame.push(dt => {
+    SCN.update(dt);
+    acc += dt; accT += dt;
+    $('clock').textContent = 'T+' + hms(st().t);
+    if (accT > 0.5) { accT = 0; refreshCard(); }
+    if (acc < 0.2) return; acc = 0;
+    const s = st();
+    $('statePill').dataset.s = s.mode; $('stateTxt').textContent = MODE_TXT[s.mode];
+    $('steps').innerHTML = stepsHTML();
+    const busy = SCN.phase !== 'idle' && SCN.phase !== 'done';
+    const m = $('msg');
+    m.textContent = busy && (s.mode === 'HOLD' || s.mode === 'TRIP') ? (s.mode === 'TRIP' ? 'Disparo: el decantador se detuvo para protegerse. Mirá la situación más abajo.' : 'Alimentación cortada para proteger los equipos. Mirá la situación más abajo.') : s.msg;
+    m.className = 'msg ' + (s.msgSev || '');
+    $('bStart').textContent = s.mode === 'HOLD' ? 'Reanudar' : 'Arrancar';
+    $('bStart').disabled = ['RUN', 'FLUSH', 'START', 'TRIP'].includes(s.mode) || busy;
+    $('bStop').disabled = !['START', 'RUN', 'HOLD'].includes(s.mode);
+    $('prodNote').textContent = SIM.producing ? 'en producción' : 'sin producción';
+    KPI.forEach((k, i) => { const [v, u, sub, sv] = k[1](); const e = $('k' + i); e.dataset.s = sv; e.querySelector('.v').innerHTML = `${v}<small>${u}</small>`; e.querySelector('.s').textContent = sub; });
+    for (const sc of SCEN) { const b = $('sc_' + sc.id); const act = SCN.sc && SCN.sc.id === sc.id && SCN.phase !== 'idle'; b.setAttribute('aria-pressed', act ? 'true' : 'false'); b.disabled = busy && !act; }
+    $('scnNote').textContent = busy ? 'una a la vez' : (s.mode === 'RUN' ? 'elegí una situación' : 'si la planta está parada, arranca sola');
+    renderSituation();
+  });
+})();
+
+</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const SIM = window.SIM;
+const host = document.getElementById('c3d');
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const UP = V(0, 1, 0), XAX = V(1, 0, 0);
+const F = 0.16;                 // nivel de piso interior
+const AY = F + 1.5, AZ = -0.45; // eje del decantador
+const PI = Math.PI;
+
+// ---------------- renderer / escena ----------------
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.localClippingEnabled = true;
+host.appendChild(renderer.domElement);
+const lblR = new CSS2DRenderer();
+Object.assign(lblR.domElement.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
+host.appendChild(lblR.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.fog = new THREE.Fog(0xdfe6ed, 38, 85);
+
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 220);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.maxPolarAngle = PI * 0.49; controls.minDistance = 1.2; controls.maxDistance = 60;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8d949b, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 1.9);
+sun.position.set(-7, 15, 11); sun.target.position.set(1, 0, -2);
+sun.castShadow = true; const SM = /[?&]lite/.test(location.search) ? 512 : window.innerWidth < 900 ? 2048 : 4096; sun.shadow.mapSize.set(SM, SM);
+Object.assign(sun.shadow.camera, { left: -16, right: 16, top: 13, bottom: -13, near: 1, far: 45 });
+sun.shadow.bias = -0.0003; sun.shadow.normalBias = 0.02;
+scene.add(sun, sun.target);
+const fill = new THREE.DirectionalLight(0xdfe8f2, 0.45); fill.position.set(10, 6, 8); scene.add(fill);
+
+// ---------------- texturas de lienzo ----------------
+function canvasTex(w, h, draw, rep) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
+  return t;
+}
+function noise(ctx, w, h, base, amp, n) {
+  ctx.fillStyle = base; ctx.fillRect(0, 0, w, h);
+  for (let i = 0; i < n; i++) { const v = (Math.random() - 0.5) * amp; ctx.fillStyle = `rgba(${v > 0 ? 255 : 0},${v > 0 ? 255 : 0},${v > 0 ? 255 : 0},${Math.abs(v)})`; ctx.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1 + Math.random() * 2); }
+}
+const texChecker = canvasTex(128, 128, (c, w, h) => {
+  noise(c, w, h, '#b9bec3', 0.08, 900);
+  c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 3; c.lineCap = 'round';
+  const seg = (x, y, a) => { c.beginPath(); c.moveTo(x - 7 * Math.cos(a), y - 7 * Math.sin(a)); c.lineTo(x + 7 * Math.cos(a), y + 7 * Math.sin(a)); c.stroke(); };
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) seg(x * 32 + 16, y * 32 + 16, ((x + y) % 2 ? 1 : -1) * 0.7);
+}, [40, 8]);
+const texConcrete = canvasTex(256, 256, (c, w, h) => noise(c, w, h, '#c9c7c2', 0.12, 5000), [6, 3]);
+const texGravel = canvasTex(256, 256, (c, w, h) => { noise(c, w, h, '#a8a69f', 0.25, 9000); }, [30, 30]);
+const texBowl = canvasTex(256, 64, (c, w, h) => {
+  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#c6ccd2'); g.addColorStop(0.5, '#e9edf0'); g.addColorStop(1, '#aeb5bc');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(40,50,60,.55)'; for (let i = 0; i < 6; i++) c.fillRect(i * w / 6, 0, 6, h);
+}, [1, 1]);
+const texHMI = canvasTex(256, 160, (c, w, h) => {
+  c.fillStyle = '#0d1824'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#e9a21a'; c.fillRect(14, 22, 60, 10); c.fillStyle = '#2f8fd8'; c.fillRect(14, 40, 90, 10); c.fillStyle = '#6b5a45'; c.fillRect(14, 58, 40, 10);
+  c.strokeStyle = '#4ea6e2'; c.lineWidth = 2; c.beginPath(); c.arc(180, 60, 32, 0, 6.3); c.stroke();
+  c.strokeStyle = '#7f8c99'; c.beginPath(); c.moveTo(14, 130); for (let x = 0; x < 230; x += 10) c.lineTo(14 + x, 120 - 18 * Math.sin(x / 30)); c.stroke();
+  c.fillStyle = '#9fb0c0'; c.font = '14px sans-serif'; c.fillText('SLOP OIL · HMI', 14, 15);
+});
+const texSign = canvasTex(512, 128, (c, w, h) => {
+  c.fillStyle = '#ffffff'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#1b78b9'; c.fillRect(0, 0, 14, h);
+  c.fillStyle = '#1d2833'; c.font = '700 40px "Red Hat Display", Arial, sans-serif'; c.fillText('SLOP OIL RECOVERY', 34, 56);
+  c.fillStyle = '#5b6978'; c.font = '500 26px "Red Hat Text", Arial, sans-serif'; c.fillText('Módulo de tratamiento · 5 m³/h', 34, 98);
+});
+const texWarn = canvasTex(128, 128, (c, w, h) => {
+  c.fillStyle = '#f2c230'; c.beginPath(); c.moveTo(64, 8); c.lineTo(122, 116); c.lineTo(6, 116); c.closePath(); c.fill();
+  c.strokeStyle = '#1a1a1a'; c.lineWidth = 7; c.stroke();
+  c.fillStyle = '#1a1a1a'; c.font = '700 60px Arial'; c.textAlign = 'center'; c.fillText('Ex', 64, 100);
+});
+
+// ---------------- materiales ----------------
+const std = (color, roughness, metalness, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness, metalness, ...extra });
+const MAT = {
+  paint: std(0xf2f3f1, 0.52, 0.08), paint2: std(0xe1e4e3, 0.6, 0.08),
+  frameC: std(0xe8eae8, 0.5, 0.15),
+  floor: std(0xffffff, 0.62, 0.55, { map: texChecker }),
+  ss: std(0xd0d5da, 0.24, 0.92), ssB: std(0xbfc5cb, 0.4, 0.88), ssDark: std(0x9aa1a8, 0.35, 0.9),
+  clad: std(0xdfe3e6, 0.3, 0.85), galv: std(0xb3b9be, 0.45, 0.85),
+  blue: std(0x1f5fa8, 0.42, 0.3), blueD: std(0x173e6e, 0.5, 0.3), navy: std(0x2c3a4c, 0.5, 0.35),
+  green: std(0x3a7d4a, 0.45, 0.25), grayM: std(0x7d858c, 0.5, 0.5), dark: std(0x2d3238, 0.6, 0.35), black: std(0x15171a, 0.7, 0.2),
+  rubber: std(0x222426, 0.85, 0.0), cast: std(0x5f6a72, 0.55, 0.55),
+  yellow: std(0xe7b21c, 0.5, 0.15), red: std(0xc53228, 0.45, 0.1), orange: std(0xe0662a, 0.5, 0.1),
+  cabinet: std(0xd9dcd8, 0.5, 0.15), hood: std(0xf3f5f6, 0.38, 0.15), frameD: std(0x3b4654, 0.55, 0.45),
+  hdpe: new THREE.MeshStandardMaterial({ color: 0xf6f4ea, roughness: 0.45, metalness: 0, transparent: true, opacity: 0.5, depthWrite: false }),
+  tank: std(0xd2d7da, 0.5, 0.35), concrete: std(0xffffff, 0.9, 0.0, { map: texConcrete }),
+  ground: std(0xffffff, 1, 0, { map: texGravel }),
+  screen: new THREE.MeshBasicMaterial({ map: texHMI }), sign: std(0xffffff, 0.5, 0.05, { map: texSign }),
+  warn: std(0xffffff, 0.5, 0.05, { map: texWarn, transparent: true }),
+  glass: new THREE.MeshStandardMaterial({ color: 0xcfe3ef, roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.4 }),
+  lampG: new THREE.MeshStandardMaterial({ color: 0x3ad16b, emissive: 0x2fb35a, emissiveIntensity: 0.9 }),
+  lampOff: std(0x5a6168, 0.4, 0.2), lampA: new THREE.MeshStandardMaterial({ color: 0xf0b030, emissive: 0xe09a10, emissiveIntensity: 0.9 }),
+  lampR: new THREE.MeshStandardMaterial({ color: 0xe5574b, emissive: 0xd03a2f, emissiveIntensity: 1.0 }),
+  cake: std(0x4a3d31, 0.95, 0.0),
+  bowl: std(0xffffff, 0.3, 0.85, { map: texBowl, side: THREE.DoubleSide }),
+  scroll: std(0xb9c0c7, 0.35, 0.85, { side: THREE.DoubleSide })
+};
+const FLUID = { slop: 0x7a4a22, hot: 0xbf5a1f, oil: 0xeea21f, water: 0x2f8fd8, solids: 0x4a4038, demul: 0x3fae6a, poly: 0x8fbf45, heat: 0xd9473b, flush: 0x7fc8f0, n2: 0x9aa7b8 };
+const flowMats = {};
+const flowMat = f => flowMats[f] ||= new THREE.MeshStandardMaterial({ color: FLUID[f], roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.28, depthWrite: false });
+
+// ---------------- ayudas de geometría ----------------
+const EQ = {};
+function eqGroup(tag, lbl) { const g = new THREE.Group(); g.userData.tag = tag; scene.add(g); EQ[tag] = { g, lbl }; return g; }
+function mesh(g, geo, mat, x = 0, y = 0, z = 0, cast = true) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = cast; m.receiveShadow = true; g.add(m); return m; }
+const B = (g, w, h, d, mat, x, y, z) => mesh(g, new THREE.BoxGeometry(w, h, d), mat, x, y, z);
+const RB = (g, w, h, d, r, mat, x, y, z) => mesh(g, new RoundedBoxGeometry(w, h, d, 3, r), mat, x, y, z);
+function C(g, r, len, mat, x, y, z, axis = 'y', seg = 28, rTop) {
+  const m = mesh(g, new THREE.CylinderGeometry(rTop ?? r, r, len, seg), mat, x, y, z);
+  if (axis === 'x') m.rotation.z = -PI / 2; else if (axis === 'z') m.rotation.x = PI / 2;
+  return m;
+}
+const S = (g, r, mat, x, y, z) => mesh(g, new THREE.SphereGeometry(r, 24, 16), mat, x, y, z);
+const qDir = d => new THREE.Quaternion().setFromUnitVectors(UP, d.clone().normalize());
+
+// instancias (aletas, bulones, bridas, peldaños...)
+const INST = {};
+function inst(kind, pos, quat, scale, color) { (INST[kind] ||= []).push({ m: new THREE.Matrix4().compose(pos, quat, scale), color }); }
+function instLocal(kind, parent, pos, rot, scale, color) {
+  const o = new THREE.Object3D(); o.position.copy(pos); o.rotation.copy(rot); o.scale.copy(scale); parent.add(o);
+  o.updateWorldMatrix(true, false); const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+  o.matrixWorld.decompose(p, q, s); parent.remove(o); inst(kind, p, q, s, color);
+}
+const INST_GEO = {
+  box: new THREE.BoxGeometry(1, 1, 1), cyl: new THREE.CylinderGeometry(1, 1, 1, 20), cyl8: new THREE.CylinderGeometry(1, 1, 1, 8),
+  ring: new THREE.CylinderGeometry(1, 1, 1, 24, 1, true)
+};
+function buildInstances() {
+  const spec = {
+    fin_blue: ['box', MAT.blue], fin_green: ['box', MAT.green], fin_navy: ['box', MAT.navy], fin_gear: ['box', MAT.frameD],
+    bolt: ['cyl8', MAT.ssDark], flange: ['cyl', MAT.ss], flangeC: ['cyl', MAT.clad],
+    rod: ['cyl8', MAT.galv], rung: ['cyl8', MAT.galv], dark: ['box', MAT.dark], ring: ['ring', null], paint: ['box', MAT.paint], frameC: ['box', MAT.frameC]
+  };
+  for (const k in INST) {
+    const [gk, mat] = spec[k];
+    const arr = INST[k];
+    const m = new THREE.InstancedMesh(INST_GEO[gk], mat || new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.1 }), arr.length);
+    arr.forEach((e, i) => { m.setMatrixAt(i, e.m); if (e.color != null) m.setColorAt(i, new THREE.Color(e.color)); });
+    m.castShadow = k !== 'ring'; m.receiveShadow = true; scene.add(m);
+    if (k === 'ring') ringMesh = m;
+  }
+}
+let ringMesh = null;
+
+function perp(d) { const a = Math.abs(d.y) < 0.9 ? UP : XAX; const u = new THREE.Vector3().crossVectors(d, a).normalize(); const v = new THREE.Vector3().crossVectors(d, u).normalize(); return [u, v]; }
+function flange(pos, dir, r, clad) {
+  const d = dir.clone().normalize(), q = qDir(d), R = Math.max(r * 1.85, r + 0.03);
+  inst(clad ? 'flangeC' : 'flange', pos, q, V(R, 0.028, R));
+  const [u, v] = perp(d), nb = r > 0.04 ? 8 : 4;
+  for (let i = 0; i < nb; i++) { const a = (i + 0.5) / nb * 2 * PI; const p = pos.clone().addScaledVector(u, Math.cos(a) * R * 0.8).addScaledVector(v, Math.sin(a) * R * 0.8); inst('bolt', p, q, V(0.009, 0.07, 0.009)); }
+}
+
+// ---------------- cañerías ----------------
+function roundedPath(P, R) {
+  const path = new THREE.CurvePath(); let prev = P[0].clone();
+  for (let i = 1; i < P.length - 1; i++) {
+    const a = P[i - 1], b = P[i], c = P[i + 1];
+    const d1 = b.clone().sub(a), d2 = c.clone().sub(b), l1 = d1.length(), l2 = d2.length();
+    const r = Math.min(R, l1 / 2, l2 / 2);
+    const p1 = b.clone().sub(d1.normalize().multiplyScalar(r)), p2 = b.clone().add(d2.normalize().multiplyScalar(r));
+    if (prev.distanceTo(p1) > 1e-4) path.add(new THREE.LineCurve3(prev, p1));
+    path.add(new THREE.QuadraticBezierCurve3(p1, b.clone(), p2)); prev = p2;
+  }
+  path.add(new THREE.LineCurve3(prev, P[P.length - 1].clone()));
+  return path;
+}
+const LINES = [];
+function pipe(id, pts, r, fluid, o = {}) {
+  const P = pts.map(p => V(...p));
+  const R = o.ins ? r * 1.75 : r;
+  const path = roundedPath(P, o.bend ?? Math.max(R * 2.2, 0.07));
+  const len = path.getLength();
+  const geo = new THREE.TubeGeometry(path, Math.max(12, Math.ceil(len / 0.05) + P.length * 8), R, o.ins ? 20 : 14, false);
+  const real = o.ins ? MAT.clad : (o.mat || MAT.ss);
+  const m = mesh(scene, geo, real, 0, 0, 0, true);
+  if (o.flanges !== false) { flange(P[0], P[1].clone().sub(P[0]), R, o.ins); flange(P[P.length - 1], P[P.length - 1].clone().sub(P[P.length - 2]), R, o.ins); }
+  // bandas de identificación de fluido
+  const nb = Math.max(1, Math.floor(len / 2.6));
+  for (let i = 0; i < nb; i++) {
+    const u = (i + 0.5) / nb; const p = path.getPointAt(u), t = path.getTangentAt(u);
+    inst('ring', p, qDir(t), V(R * 1.06, 0.07, R * 1.06), FLUID[fluid]);
+  }
+  const NS = Math.max(40, Math.ceil(len / 0.03)), samples = new Float32Array(NS * 3);
+  for (let i = 0; i < NS; i++) { const p = path.getPointAt(i / (NS - 1)); samples.set([p.x, p.y, p.z], i * 3); }
+  const L = { id, mesh: m, real, fluid, flow: o.flow, nom: o.nom || 5, len, samples, NS, R, fluidFn: o.fluidFn };
+  // partículas
+  const np = Math.max(4, Math.round(len / (o.small ? 0.12 : 0.2)));
+  const pg = new THREE.SphereGeometry(Math.min(R * 0.72, 0.034), 10, 8);
+  L.pm = new THREE.MeshBasicMaterial({ color: FLUID[fluid] });
+  L.parts = new THREE.InstancedMesh(pg, L.pm, np); L.parts.visible = false; L.np = np; L.phase = Math.random();
+  scene.add(L.parts); LINES.push(L);
+  return L;
+}
+
+// ---------------- motores, válvulas, instrumentos ----------------
+function motor(g, pos, quat, r = 0.14, len = 0.42, color = 'blue', feet = true) {
+  const mat = MAT[color], grp = new THREE.Group(); grp.position.copy(pos); grp.quaternion.copy(quat); g.add(grp);
+  C(grp, r, len, mat, 0, 0, 0, 'x', 32);
+  C(grp, r * 1.04, 0.035, mat, len / 2, 0, 0, 'x', 32);
+  C(grp, r * 1.06, len * 0.3, mat, -len / 2 - len * 0.15, 0, 0, 'x', 32);
+  C(grp, r * 0.9, 0.012, MAT.black, -len / 2 - len * 0.3 - 0.004, 0, 0, 'x', 32);
+  C(grp, r * 0.2, 0.09, MAT.ss, len / 2 + 0.06, 0, 0, 'x', 16);
+  B(grp, len * 0.32, r * 0.45, r * 0.75, mat, len * 0.05, r + r * 0.18, 0);
+  if (feet) B(grp, len * 0.8, r * 0.22, r * 1.8, mat, 0, -r * 0.92, 0);
+  const nf = 22;
+  for (let i = 0; i < nf; i++) {
+    const a = (i / nf) * 2 * PI; if (feet && Math.sin(a) < -0.75) continue;
+    instLocal('fin_' + color, grp, V(0, Math.sin(a) * r * 1.07, Math.cos(a) * r * 1.07), new THREE.Euler(a - PI / 2, 0, 0), V(len * 0.92, r * 0.16, 0.012));
+  }
+  return grp;
+}
+const qX = s => s > 0 ? new THREE.Quaternion() : new THREE.Quaternion().setFromAxisAngle(UP, PI);
+const qZ = s => new THREE.Quaternion().setFromAxisAngle(UP, s > 0 ? -PI / 2 : PI / 2);
+const qYup = () => new THREE.Quaternion().setFromAxisAngle(V(0, 0, 1), PI / 2);
+
+function ballValve(g, pos, dir, r, act = true) {
+  const d = dir.clone().normalize();
+  const body = S(g, r * 1.55, MAT.ss, pos.x, pos.y, pos.z); body.scale.set(1, 0.9, 1);
+  flange(pos.clone().addScaledVector(d, r * 1.7), d, r); flange(pos.clone().addScaledVector(d, -r * 1.7), d, r);
+  if (act) {
+    B(g, 0.05, 0.08, 0.05, MAT.ssB, pos.x, pos.y + r * 1.5 + 0.04, pos.z);
+    RB(g, 0.2, 0.11, 0.12, 0.02, MAT.ssB, pos.x, pos.y + r * 1.5 + 0.13, pos.z);
+    const ind = C(g, 0.035, 0.04, MAT.yellow, pos.x, pos.y + r * 1.5 + 0.205, pos.z);
+    return ind;
+  }
+  B(g, 0.22, 0.015, 0.03, MAT.red, pos.x + 0.08, pos.y + r * 1.6, pos.z);
+}
+function globeValve(g, pos, dir, r, actDir = UP, color = 'blueD') {
+  const d = dir.clone().normalize(), a = actDir.clone().normalize();
+  const body = S(g, r * 1.7, MAT.cast, pos.x, pos.y, pos.z);
+  flange(pos.clone().addScaledVector(d, r * 1.9), d, r); flange(pos.clone().addScaledVector(d, -r * 1.9), d, r);
+  const q = qDir(a);
+  const yoke = mesh(g, new THREE.CylinderGeometry(0.02, 0.02, 0.22, 10), MAT.ss); yoke.position.copy(pos.clone().addScaledVector(a, r * 1.7 + 0.11)); yoke.quaternion.copy(q);
+  const dome = mesh(g, new THREE.CylinderGeometry(0.11, 0.13, 0.09, 28), MAT[color]); dome.position.copy(pos.clone().addScaledVector(a, r * 1.7 + 0.26)); dome.quaternion.copy(q);
+  const top = mesh(g, new THREE.SphereGeometry(0.11, 24, 10, 0, 2 * PI, 0, PI / 2), MAT[color]); top.position.copy(pos.clone().addScaledVector(a, r * 1.7 + 0.305)); top.quaternion.copy(q);
+}
+function gauge(g, pos, face) {
+  const q = qDir(face);
+  const m1 = mesh(g, new THREE.CylinderGeometry(0.055, 0.055, 0.03, 24), MAT.ss); m1.position.copy(pos); m1.quaternion.copy(q);
+  const m2 = mesh(g, new THREE.CircleGeometry(0.047, 24), std(0xf7f7f2, 0.4, 0)); m2.position.copy(pos.clone().addScaledVector(face.clone().normalize(), 0.016)); m2.lookAt(pos.clone().addScaledVector(face, 1));
+}
+function transmitter(g, pos, face = V(0, 0, 1), color = 'blueD') {
+  C(g, 0.012, 0.1, MAT.ss, pos.x, pos.y - 0.06, pos.z);
+  const h = C(g, 0.045, 0.07, MAT[color], pos.x, pos.y, pos.z, 'z');
+  const s = mesh(g, new THREE.CircleGeometry(0.03, 20), MAT.screen); s.position.copy(pos.clone().addScaledVector(face, 0.036)); s.lookAt(pos.clone().addScaledVector(face, 1));
+  return h;
+}
+function label(tag) { return tag; }
+
+// ======================================================================
+//                         CONTAINER ISO 40' HC
+// ======================================================================
+const CL = 6.06, CW = 1.22, CH = 2.896;
+function corrugated(len, h, pitch = 0.278, d = 0.036) {
+  const pts = [], fl = 0.07, sl = (pitch - 2 * fl) / 2;
+  let x = 0; pts.push([0, 0]);
+  while (x < len - 1e-6) {
+    const seq = [[fl, 0], [sl, d], [fl, d], [sl, 0]];
+    for (const [dx, y] of seq) { x = Math.min(len, x + dx); pts.push([x, y]); if (x >= len) break; }
+  }
+  const t = 0.004, sh = new THREE.Shape();
+  sh.moveTo(pts[0][0], pts[0][1]); pts.forEach(p => sh.lineTo(p[0], p[1]));
+  for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(pts[i][0], pts[i][1] + t);
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, steps: 1, curveSegments: 1 });
+  geo.rotateX(-PI / 2);
+  return geo;
+}
+const walls = new THREE.Group(); scene.add(walls);
+const cnt = eqGroup('CNT');
+function buildContainer() {
+  const g = cnt;
+  // losa
+  B(scene, 13.6, 0.2, 3.6, MAT.concrete, 0, -0.1, 0).castShadow = false;
+  // piso
+  const fl = B(g, 12.06, 0.04, 2.38, MAT.floor, 0, F - 0.02, 0); fl.castShadow = false;
+  // largueros inferiores y superiores
+  for (const z of [-CW + 0.06, CW - 0.06]) { B(g, 12.19, 0.16, 0.12, MAT.frameC, 0, 0.08, z); B(g, 12.19, 0.13, 0.11, MAT.frameC, 0, CH - 0.065, z); }
+  for (const x of [-CL + 0.05, CL - 0.05]) { B(g, 0.1, 0.16, 2.44, MAT.frameC, x, 0.08, 0); B(g, 0.1, 0.18, 2.44, MAT.frameC, x, CH - 0.09, 0); }
+  // postes de esquina y esquineros
+  for (const x of [-CL + 0.075, CL - 0.075]) for (const z of [-CW + 0.075, CW - 0.075]) {
+    B(g, 0.15, CH, 0.15, MAT.frameC, x, CH / 2, z);
+    for (const y of [0.081, CH - 0.081]) { B(g, 0.178, 0.162, 0.178, MAT.paint2, x, y, z); B(g, 0.06, 0.04, 0.005, MAT.black, x, y, z + Math.sign(z) * 0.09); }
+  }
+  // pared trasera corrugada
+  const back = mesh(walls, corrugated(12.0, CH - 0.29), MAT.paint, -6.0, F, -CW + 0.03); back.castShadow = true;
+  // frente: solo la sala eléctrica (resto cortado para ver el interior)
+  const front = mesh(walls, corrugated(1.92, CH - 0.29), MAT.paint, -4.13, F, CW - 0.03); front.rotation.y = PI;
+  B(walls, 0.82, 2.0, 0.03, MAT.paint2, -4.75, F + 1.0, CW + 0.02);
+  B(walls, 0.06, 0.04, 0.05, MAT.dark, -4.45, F + 1.0, CW + 0.05);
+  const sign = mesh(walls, new THREE.PlaneGeometry(1.15, 0.29), MAT.sign, -5.2, F + 2.2, CW + 0.045); sign.castShadow = false;
+  const w1 = mesh(walls, new THREE.PlaneGeometry(0.18, 0.18), MAT.warn, -5.55, F + 1.55, CW + 0.045); w1.castShadow = false;
+  // extremo derecho con abertura para el transportador
+  const zs = [[-CW + 0.03, 0.44], [-0.17, CW - 0.03 + 0.17]];
+  for (const [z0, l] of zs) { const p = mesh(walls, corrugated(l, CH - 0.29), MAT.paint, CL - 0.03, F, z0); p.rotation.y = -PI / 2; }
+  { const p = mesh(walls, corrugated(0.62, CH - 0.29 - 1.32), MAT.paint, CL - 0.03, 1.48, -0.79); p.rotation.y = -PI / 2; }
+  { const p = mesh(walls, corrugated(0.62, 0.52), MAT.paint, CL - 0.03, F, -0.79); p.rotation.y = -PI / 2; }
+  // extremo izquierdo: puertas de carga
+  { const p = mesh(walls, corrugated(2.38, CH - 0.29, 0.25, 0.03), MAT.paint2, -CL + 0.03, F, CW - 0.03); p.rotation.y = PI / 2; }
+  for (const z of [-0.85, -0.3, 0.3, 0.85]) {
+    instLocal('rod', walls, V(-CL - 0.04, F + 1.27, z), new THREE.Euler(0, 0, 0), V(0.016, 2.4, 0.016));
+    B(walls, 0.03, 0.3, 0.03, MAT.galv, -CL - 0.06, F + 1.0, z + 0.12);
+  }
+  B(walls, 0.02, 2.5, 0.02, MAT.dark, -CL - 0.02, F + 1.25, 0);
+  // equipo de aire acondicionado de la sala eléctrica
+  RB(g, 0.9, 0.6, 0.32, 0.03, MAT.paint, -5.1, 1.75, -CW - 0.2);
+  C(g, 0.21, 0.02, MAT.dark, -5.25, 1.75, -CW - 0.36, 'z', 28);
+  // tabique de la sala eléctrica
+  B(walls, 0.06, CH - 0.29, 1.52, MAT.paint, -4.12, F + (CH - 0.29) / 2, -0.43);
+  B(walls, 0.06, 0.62, 0.84, MAT.paint, -4.12, CH - 0.44, 0.75);
+  B(walls, 0.05, 2.0, 0.8, MAT.paint2, -4.1, F + 1.0, 0.75);
+  B(walls, 0.06, 0.45, 0.35, MAT.glass, -4.08, F + 1.55, 0.75);
+  B(walls, 0.07, 0.03, 0.12, MAT.dark, -4.05, F + 1.0, 0.46);
+  // techo (oculto por defecto)
+  roof = new THREE.Group(); scene.add(roof); roof.visible = false;
+  B(roof, 12.0, 0.03, 2.36, MAT.paint, 0, CH - 0.02, 0);
+  for (let x = -5.8; x < 6; x += 0.6) B(roof, 0.05, 0.02, 2.36, MAT.paint2, x, CH + 0.005, 0);
+  B(roof, 2.7, 0.04, 1.2, MAT.paint2, 3.6, CH + 0.02, AZ);
+  // bandeja portacables (frente, alto)
+  for (const z of [0.86, 1.08]) B(g, 9.7, 0.06, 0.012, MAT.galv, 0.7, CH - 0.33, z);
+  for (let x = -4.1; x < 5.5; x += 0.3) instLocal('rung', g, V(x, CH - 0.35, 0.97), new THREE.Euler(PI / 2, 0, 0), V(0.008, 0.22, 0.008));
+  // extintores y carteles
+  for (const x of [-3.9, 5.4]) { C(g, 0.08, 0.5, MAT.red, x, F + 0.35, 1.05); C(g, 0.03, 0.1, MAT.black, x, F + 0.65, 1.05); }
+}
+let roof;
+
+// ======================================================================
+//                         SALA ELÉCTRICA
+// ======================================================================
+function buildElec() {
+  const g = eqGroup('CP-001', V(-5.1, F + 2.4, -0.6));
+  for (let i = 0; i < 3; i++) {
+    const x = -5.68 + i * 0.6;
+    RB(g, 0.58, 2.0, 0.5, 0.01, MAT.cabinet, x, F + 1.1, -0.9);
+    B(g, 0.58, 0.1, 0.5, MAT.dark, x, F + 0.05, -0.9);
+    B(g, 0.006, 1.85, 0.005, MAT.grayM, x, F + 1.1, -0.648);
+    B(g, 0.03, 0.12, 0.02, MAT.dark, x + 0.2, F + 1.2, -0.64);
+    for (let k = 0; k < 4; k++) B(g, 0.3, 0.012, 0.004, MAT.grayM, x - 0.08, F + 0.35 + k * 0.03, -0.648);
+  }
+  B(g, 0.16, 0.16, 0.01, MAT.dark, -5.08, F + 1.55, -0.645);
+  // PLC + HMI
+  RB(g, 0.5, 2.0, 0.55, 0.01, MAT.cabinet, -5.73, F + 1.1, 0.82);
+  const scr = mesh(g, new THREE.PlaneGeometry(0.32, 0.2), MAT.screen, -5.475, F + 1.45, 0.82); scr.rotation.y = PI / 2; scr.castShadow = false;
+  for (const [y, m] of [[1.9, MAT.lampG], [1.84, MAT.lampOff], [1.78, MAT.lampOff]]) { const l = S(g, 0.014, m, -5.475, F + y, 0.65); }
+}
+
+// ======================================================================
+//                         QUÍMICOS
+// ======================================================================
+let ibcLiquid, polyLevel, polyRot = [];
+function buildChem() {
+  // IBC demulsificante
+  const g = eqGroup('TK-201', V(-2.05, F + 1.5, -0.6));
+  B(g, 1.0, 0.14, 1.0, MAT.dark, -2.05, F + 0.07, -0.62);
+  const bodyGeo = new RoundedBoxGeometry(0.92, 0.96, 0.92, 4, 0.06);
+  ibcLiquid = mesh(g, new THREE.BoxGeometry(0.88, 1, 0.88), std(0x3fae6a, 0.3, 0, { transparent: true, opacity: 0.8 }), -2.05, F + 0.16, -0.62, false);
+  ibcLiquid.geometry.translate(0, 0.5, 0);
+  mesh(g, bodyGeo, MAT.hdpe, -2.05, F + 0.64, -0.62, false);
+  C(g, 0.08, 0.05, MAT.black, -2.05, F + 1.14, -0.62);
+  for (const x of [-2.53, -1.57]) for (const z of [-1.1, -0.14]) instLocal('rod', g, V(x, F + 0.65, z), new THREE.Euler(), V(0.012, 1.0, 0.012));
+  for (let k = 0; k < 4; k++) {
+    const y = F + 0.22 + k * 0.31;
+    for (const z of [-1.1, -0.14]) instLocal('rod', g, V(-2.05, y, z), new THREE.Euler(0, 0, PI / 2), V(0.01, 0.96, 0.01));
+    for (const x of [-2.53, -1.57]) instLocal('rod', g, V(x, y, -0.62), new THREE.Euler(PI / 2, 0, 0), V(0.01, 0.96, 0.01));
+  }
+  for (let k = 0; k < 4; k++) { const x = -2.53 + (k + 1) * 0.19; instLocal('rod', g, V(x, F + 0.65, -0.14), new THREE.Euler(), V(0.009, 1.0, 0.009)); }
+  ballValve(g, V(-2.05, F + 0.24, -0.1), V(0, 0, 1), 0.02, false);
+  // bomba dosificadora P-201
+  const p = eqGroup('P-201', V(-2.05, F + 1.05, 0.15));
+  B(p, 0.3, 0.04, 0.22, MAT.galv, -2.05, F + 0.42, 0.14);
+  for (const x of [-2.17, -1.93]) B(p, 0.03, 0.42, 0.03, MAT.galv, x, F + 0.21, 0.14);
+  RB(p, 0.2, 0.2, 0.16, 0.02, MAT.blue, -2.08, F + 0.55, 0.14);
+  C(p, 0.06, 0.06, MAT.glass, -1.95, F + 0.55, 0.14, 'x');
+  C(p, 0.065, 0.02, MAT.blueD, -1.92, F + 0.55, 0.14, 'x');
+  // unidad de polímero
+  const t = eqGroup('TK-301', V(-3.35, F + 2.1, -0.75));
+  RB(t, 1.36, 1.2, 0.8, 0.02, MAT.ssB, -3.35, F + 0.75, -0.74);
+  for (const x of [-3.8, -2.9]) B(t, 0.006, 1.18, 0.81, MAT.ssDark, x, F + 0.75, -0.74);
+  for (const x of [-3.9, -3.35, -2.8]) for (const z of [-1.1, -0.38]) C(t, 0.03, 0.15, MAT.ss, x, F + 0.075, z);
+  B(t, 1.38, 0.03, 0.82, MAT.ss, -3.35, F + 1.36, -0.74);
+  for (const x of [-3.8, -3.35, -2.9]) {
+    const m = motor(t, V(x, F + 1.62, -0.74), qYup(), 0.06, 0.2, 'blue', false);
+    polyRot.push(m);
+  }
+  C(t, 0.24, 0.32, MAT.ss, -3.85, F + 1.86, -0.95, 'y', 28, 0.32);
+  C(t, 0.05, 0.2, MAT.ss, -3.85, F + 1.62, -0.95);
+  motor(t, V(-3.6, F + 1.62, -1.02), qX(-1), 0.045, 0.14, 'blue', false);
+  RB(t, 0.3, 0.36, 0.14, 0.01, MAT.cabinet, -2.85, F + 1.0, -0.28);
+  S(t, 0.012, MAT.lampG, -2.8, F + 1.1, -0.205);
+  polyLevel = mesh(t, new THREE.BoxGeometry(1.3, 1, 0.74), std(0x8fbf45, 0.3, 0, { transparent: true, opacity: 0.75 }), -3.35, F + 0.16, -0.74, false);
+  polyLevel.geometry.translate(0, 0.5, 0); polyLevel.visible = false;
+  // bomba de polímero P-301
+  const q = eqGroup('P-301', V(-3.0, F + 0.85, -0.12));
+  B(q, 0.95, 0.06, 0.26, MAT.galv, -3.25, F + 0.03, -0.12);
+  motor(q, V(-3.55, F + 0.2, -0.12), qX(1), 0.075, 0.24, 'blue');
+  B(q, 0.12, 0.12, 0.12, MAT.cast, -3.33, F + 0.2, -0.12);
+  C(q, 0.04, 0.42, MAT.rubber, -3.06, F + 0.2, -0.12, 'x');
+  C(q, 0.05, 0.08, MAT.cast, -2.82, F + 0.2, -0.12, 'x');
+}
+
+// ======================================================================
+//                    ALIMENTACIÓN: P-101, F-101, E-101
+// ======================================================================
+let basketLamps = {};
+function buildFeed() {
+  // P-101
+  const g = eqGroup('P-101', V(-0.4, F + 0.85, -0.75));
+  B(g, 2.2, 0.08, 0.5, MAT.frameD, -0.35, F + 0.04, -0.75);
+  B(g, 2.3, 0.02, 0.62, MAT.ssB, -0.35, F + 0.01, -0.75);
+  motor(g, V(-1.22, F + 0.33, -0.75), qX(1), 0.12, 0.34, 'blue');
+  RB(g, 0.2, 0.26, 0.26, 0.02, MAT.blue, -0.96, F + 0.33, -0.75);
+  B(g, 0.14, 0.18, 0.2, MAT.yellow, -0.79, F + 0.33, -0.75);
+  RB(g, 0.3, 0.3, 0.28, 0.02, MAT.cast, -0.57, F + 0.33, -0.75);
+  C(g, 0.08, 0.86, MAT.rubber, 0.01, F + 0.33, -0.75, 'x');
+  for (const x of [-0.38, 0.4]) C(g, 0.1, 0.03, MAT.cast, x, F + 0.33, -0.75, 'x');
+  instLocal('rod', g, V(0.01, F + 0.33, -0.66), new THREE.Euler(0, 0, PI / 2), V(0.01, 0.78, 0.01));
+  instLocal('rod', g, V(0.01, F + 0.33, -0.84), new THREE.Euler(0, 0, PI / 2), V(0.01, 0.78, 0.01));
+  C(g, 0.09, 0.15, MAT.cast, 0.52, F + 0.33, -0.75, 'x');
+  for (const x of [-0.57, 0.52]) B(g, 0.12, 0.2, 0.3, MAT.cast, x, F + 0.15, -0.75);
+  gauge(g, V(0.62, F + 0.62, -0.62), V(0, 0, 1));
+  C(g, 0.012, 0.22, MAT.ss, 0.62, F + 0.48, -0.66);
+  // F-101
+  const f = eqGroup('F-101', V(1.14, F + 1.0, -0.75));
+  for (const x of [0.86, 1.42]) for (const z of [-0.95, -0.55]) B(f, 0.05, 0.2, 0.05, MAT.ssB, x, F + 0.1, z);
+  B(f, 0.62, 0.03, 0.46, MAT.ssB, 1.14, F + 0.2, -0.75);
+  for (const [x, k] of [[0.98, 'A'], [1.3, 'B']]) {
+    C(f, 0.12, 0.5, MAT.ss, x, F + 0.47, -0.75);
+    C(f, 0.12, 0.08, MAT.ss, x, F + 0.2 + 0.04, -0.75, 'y', 28, 0.06);
+    C(f, 0.155, 0.04, MAT.ss, x, F + 0.74, -0.75);
+    C(f, 0.13, 0.04, MAT.ssB, x, F + 0.78, -0.75);
+    for (let i = 0; i < 4; i++) { const a = i / 4 * 2 * PI + 0.4; C(f, 0.012, 0.09, MAT.ssDark, x + Math.cos(a) * 0.14, F + 0.8, -0.75 + Math.sin(a) * 0.14); }
+    basketLamps[k] = S(f, 0.02, MAT.lampOff, x, F + 0.82, -0.75);
+  }
+  C(f, 0.05, 0.64, MAT.ss, 1.14, F + 0.42, -0.75, 'x');
+  B(f, 0.04, 0.25, 0.04, MAT.ss, 1.14, F + 0.58, -0.75);
+  B(f, 0.3, 0.02, 0.04, MAT.red, 1.24, F + 0.7, -0.75);
+  transmitter(f, V(1.14, F + 0.32, -0.52));
+  // E-101 + rack
+  const e = eqGroup('E-101', V(-0.3, F + 2.0, -0.75));
+  for (const x of [-1.3, 0.75]) for (const z of [-1.05, -0.45]) B(e, 0.07, 1.22, 0.07, MAT.frameD, x, F + 0.61, z);
+  for (const z of [-1.05, -0.45]) B(e, 2.12, 0.08, 0.07, MAT.frameD, -0.275, F + 1.2, z);
+  for (const x of [-1.3, 0.75]) B(e, 0.07, 0.08, 0.6, MAT.frameD, x, F + 1.2, -0.75);
+  C(e, 0.175, 1.7, MAT.clad, -0.3, F + 1.45, -0.75, 'x', 36);
+  for (let x = -1.0; x < 0.5; x += 0.42) C(e, 0.179, 0.012, MAT.ssDark, x, F + 1.45, -0.75, 'x', 36);
+  C(e, 0.19, 0.2, MAT.grayM, -1.25, F + 1.45, -0.75, 'x', 36);
+  C(e, 0.23, 0.04, MAT.grayM, -1.14, F + 1.45, -0.75, 'x', 36);
+  const head = S(e, 0.178, MAT.clad, 0.55, F + 1.45, -0.75); head.scale.set(0.45, 1, 1);
+  for (const x of [-0.85, 0.3]) B(e, 0.1, 0.13, 0.36, MAT.frameD, x, F + 1.3, -0.75);
+  for (const [x, top] of [[-1.0, false], [0.45, true], [-0.9, true], [0.15, true]]) C(e, 0.05, 0.08, MAT.ss, x, top ? F + 1.62 : F + 1.28, -0.75);
+  B(e, 0.18, 0.12, 0.008, MAT.ss, -0.3, F + 1.45, -0.57);
+  // TCV-101
+  const tv = eqGroup('TCV-101', V(-0.9, F + 2.5, -0.55));
+  globeValve(tv, V(-0.9, F + 2.0, -0.75), V(0, 1, 0), 0.03, V(0, 0, 1), 'blueD');
+  // FT-101 Coriolis
+  const ft = eqGroup('FT-101', V(1.1, F + 2.25, -0.75));
+  RB(ft, 0.42, 0.22, 0.08, 0.04, MAT.ss, 1.1, F + 1.7, -0.75);
+  for (const x of [0.93, 1.27]) C(ft, 0.03, 0.12, MAT.ss, x, F + 1.79, -0.75);
+  transmitter(ft, V(1.1, F + 1.98, -0.75), V(0, 0, 1), 'blueD');
+  transmitter(ft, V(0.62, F + 1.98, -0.75), V(0, 0, 1), 'navy');
+  // XV-102
+  const xv = eqGroup('XV-102', V(1.55, F + 2.3, -0.6));
+  xvInd.xv102 = ballValve(xv, V(1.55, F + 1.85, -0.75), V(1, 0, 0), 0.045, true);
+  flange(V(1.55, F + 1.85, -0.83), V(0, 0, -1), 0.045);
+}
+const xvInd = {};
+
+// ======================================================================
+//                         DECANTADOR X-101
+// ======================================================================
+const CLIP = [new THREE.Plane(new THREE.Vector3(0, 0, -1), AZ)];
+let shake, hoodPivot, bowlRot, scrollRot, layerG, feedTube;
+const rbFn = x => x < 4.15 ? 0.285 : 0.285 - 0.125 * (x - 4.15) / 0.6;
+function buildDecanter() {
+  const g = eqGroup('X-101', V(3.5, F + 2.25, AZ));
+  shake = new THREE.Group(); g.add(shake);
+  const fm = MAT.frameD;
+  for (const z of [-0.98, 0.08]) B(shake, 3.78, 0.2, 0.13, fm, 3.85, F + 0.95, z);
+  for (const x of [2.75, 4.0, 5.5]) for (const z of [-0.98, 0.08]) { B(shake, 0.14, 0.82, 0.14, fm, x, F + 0.44, z); C(shake, 0.08, 0.05, MAT.rubber, x, F + 0.03, z); }
+  for (const x of [2.75, 4.0]) B(shake, 0.13, 0.2, 1.2, fm, x, F + 0.95, -0.45);
+  // carcasas de descarga
+  RB(shake, 0.46, 0.96, 0.92, 0.03, MAT.ss, 2.22, F + 1.55, AZ);
+  RB(shake, 0.26, 1.0, 1.0, 0.03, MAT.ss, 4.87, F + 1.55, AZ);
+  B(shake, 0.24, 0.55, 0.38, MAT.ss, 4.87, F + 0.8, AZ);
+  // cojinetes
+  for (const x of [1.93, 5.06]) { C(shake, 0.15, 0.14, MAT.cast, x, AY, AZ, 'x', 32); B(shake, 0.18, 0.5, 0.36, MAT.cast, x, F + 1.25, AZ); }
+  // caja reductora y motor diferencial
+  C(shake, 0.25, 0.3, MAT.navy, 5.28, AY, AZ, 'x', 40);
+  for (let i = 0; i < 16; i++) { const a = i / 16 * 2 * PI; instLocal('fin_gear', shake, V(5.28, AY + Math.sin(a) * 0.255, AZ + Math.cos(a) * 0.255), new THREE.Euler(a - PI / 2, 0, 0), V(0.26, 0.04, 0.012)); }
+  motor(shake, V(5.68, AY, AZ), qX(-1), 0.13, 0.38, 'blue', false);
+  // motor principal y cubrecorreas
+  B(shake, 0.72, 0.18, 0.5, fm, 5.45, F + 0.97, 0.25);
+  motor(shake, V(5.43, F + 1.29, 0.25), qX(-1), 0.2, 0.6, 'blue');
+  RB(shake, 0.13, 1.1, 1.3, 0.06, MAT.hood, 5.06, F + 1.57, -0.2);
+  B(shake, 0.135, 0.06, 1.3, MAT.blue, 5.06, F + 1.9, -0.2);
+  // cubierta articulada
+  hoodPivot = new THREE.Group(); hoodPivot.position.set(0, F + 1.08, -0.97); shake.add(hoodPivot);
+  const prof = [[0, 0], [1.04, 0], [1.04, 0.22], [0.9, 0.76], [0.78, 0.87], [0.26, 0.87], [0.14, 0.76], [0, 0.22]];
+  const sh = new THREE.Shape(); sh.moveTo(...prof[0]); prof.slice(1).forEach(p => sh.lineTo(...p)); sh.closePath();
+  const hole = new THREE.Path(); const ins = [[0.03, 0.0], [1.01, 0.0], [1.01, 0.21], [0.875, 0.74], [0.77, 0.84], [0.27, 0.84], [0.165, 0.74], [0.03, 0.21]];
+  hole.moveTo(...ins[0]); ins.slice(1).forEach(p => hole.lineTo(...p)); hole.closePath(); sh.holes.push(hole);
+  const hood = mesh(hoodPivot, new THREE.ExtrudeGeometry(sh, { depth: 2.28, bevelEnabled: false }), MAT.hood, 4.74, 0, 0);
+  hood.rotation.y = -PI / 2;
+  const stripe = B(hoodPivot, 2.28, 0.1, 0.01, MAT.blue, 3.6, 0.48, 1.0); stripe.rotation.x = -0.25;
+  for (const x of [3.0, 4.2]) B(hoodPivot, 0.16, 0.03, 0.05, MAT.ssDark, x, 0.3, 1.07);
+  const plate = B(hoodPivot, 0.4, 0.14, 0.006, MAT.ss, 2.85, 0.62, 0.95); plate.rotation.x = -0.25;
+  // bowl giratorio
+  bowlRot = new THREE.Group(); bowlRot.position.set(0, AY, AZ); shake.add(bowlRot);
+  const cylG = new THREE.CylinderGeometry(0.3, 0.3, 1.7, 56, 1, true); const cy = mesh(bowlRot, cylG, MAT.bowl, 3.3, 0, 0); cy.rotation.z = -PI / 2;
+  const coG = new THREE.CylinderGeometry(0.165, 0.3, 0.6, 56, 1, true); const co = mesh(bowlRot, coG, MAT.bowl, 4.45, 0, 0); co.rotation.z = -PI / 2;
+  const ep = mesh(bowlRot, new THREE.CylinderGeometry(0.3, 0.3, 0.03, 56), MAT.bowl, 2.44, 0, 0); ep.rotation.z = -PI / 2;
+  C(bowlRot, 0.085, 0.45, MAT.ss, 2.2, 0, 0, 'x'); C(bowlRot, 0.075, 0.35, MAT.ss, 4.92, 0, 0, 'x');
+  // tornillo
+  scrollRot = new THREE.Group(); scrollRot.position.set(0, AY, AZ); shake.add(scrollRot);
+  C(scrollRot, 0.1, 2.25, MAT.scroll, 3.6, 0, 0, 'x', 32);
+  const fpos = [], N = 900, x0 = 2.5, x1 = 4.72, pitch = 0.17;
+  for (let i = 0; i <= N; i++) {
+    const x = x0 + (x1 - x0) * i / N, a = 2 * PI * (x - x0) / pitch, ro = rbFn(x) - 0.012, ri = 0.1;
+    fpos.push(x, ri * Math.cos(a), ri * Math.sin(a), x, ro * Math.cos(a), ro * Math.sin(a));
+  }
+  const idx = []; for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(fpos, 3)); fg.setIndex(idx); fg.computeVertexNormals();
+  mesh(scrollRot, fg, MAT.scroll);
+  feedTube = C(shake, 0.04, 1.4, MAT.ss, 2.62, AY, AZ, 'x');
+  layerG = new THREE.Group(); layerG.position.set(0, AY, AZ + 0.002); shake.add(layerG); layerG.visible = false;
+  // monorriel
+  const mr = eqGroup('MR-101', V(5.2, CH - 0.1, AZ));
+  B(mr, 3.9, 0.012, 0.11, MAT.yellow, 3.95, CH - 0.32, AZ); B(mr, 3.9, 0.012, 0.11, MAT.yellow, 3.95, CH - 0.22, AZ); B(mr, 3.9, 0.1, 0.01, MAT.yellow, 3.95, CH - 0.27, AZ);
+  for (const x of [2.1, 5.8]) B(mr, 0.08, 0.1, 2.3, MAT.yellow, x, CH - 0.18, 0);
+  RB(mr, 0.18, 0.22, 0.2, 0.03, MAT.yellow, 3.4, CH - 0.48, AZ);
+  instLocal('dark', mr, V(3.4, CH - 0.68, AZ), new THREE.Euler(), V(0.012, 0.2, 0.012));
+  // N2
+  const n2 = eqGroup('N2-901', V(5.72, F + 2.0, 0.82));
+  for (const [x, z] of [[5.58, 0.7], [5.82, 0.7], [5.58, 0.95], [5.82, 0.95]]) {
+    C(n2, 0.11, 1.35, MAT.dark, x, F + 0.69, z); S(n2, 0.11, MAT.dark, x, F + 1.36, z); C(n2, 0.11, 0.15, MAT.green, x, F + 1.32, z);
+    C(n2, 0.025, 0.1, MAT.ss, x, F + 1.5, z);
+  }
+  B(n2, 0.06, 0.04, 0.5, MAT.galv, 5.98, F + 1.1, 0.82);
+  transmitter(n2, V(4.87, F + 2.15, AZ + 0.32), V(0, 0, 1), 'navy');
+}
+const LAYER_MAT = {
+  water: new THREE.MeshStandardMaterial({ color: FLUID.water, roughness: 0.25, side: THREE.DoubleSide }),
+  oil: new THREE.MeshStandardMaterial({ color: FLUID.oil, roughness: 0.25, side: THREE.DoubleSide }),
+  solids: new THREE.MeshStandardMaterial({ color: 0x3e342b, roughness: 0.9, side: THREE.DoubleSide }),
+  waterB: new THREE.MeshStandardMaterial({ color: FLUID.water, roughness: 0.25, transparent: true, opacity: 0.55, side: THREE.DoubleSide, clippingPlanes: CLIP }),
+  oilB: new THREE.MeshStandardMaterial({ color: FLUID.oil, roughness: 0.25, transparent: true, opacity: 0.6, side: THREE.DoubleSide, clippingPlanes: CLIP })
+};
+let layerKey = '';
+function buildLayers(ri, sf, mode) {
+  const key = ri.toFixed(3) + sf.toFixed(2) + mode;
+  if (key === layerKey) return; layerKey = key;
+  layerG.children.slice().forEach(c => { layerG.remove(c); c.geometry.dispose(); });
+  const ts = x => sf * (0.006 + 0.03 * (x - 2.47) / 2.27), rp = 0.175, NS = 40;
+  const poly = (x0, x1, top, bot) => { const s = new THREE.Shape(); for (let i = 0; i <= NS; i++) { const x = x0 + (x1 - x0) * i / NS; i ? s.lineTo(x, top(x)) : s.moveTo(x, top(x)); } for (let i = NS; i >= 0; i--) { const x = x0 + (x1 - x0) * i / NS; s.lineTo(x, bot(x)); } return new THREE.ShapeGeometry(s); };
+  const two = (geo, mat) => { const a = new THREE.Mesh(geo, mat); const b = new THREE.Mesh(geo, mat); b.scale.y = -1; layerG.add(a, b); };
+  const findEnd = f => { let x = 2.47; while (x < 4.74 && f(x)) x += 0.005; return x; };
+  if (mode === 'flush') {
+    const xe = findEnd(x => rbFn(x) > rp + 0.005);
+    two(poly(2.47, xe, x => rbFn(x), () => rp), LAYER_MAT.water);
+    return;
+  }
+  two(poly(2.47, 4.74, x => rbFn(x), x => Math.max(0.105, rbFn(x) - ts(x))), LAYER_MAT.solids);
+  const xw = findEnd(x => rbFn(x) - ts(x) > ri + 0.003);
+  if (xw > 2.5) two(poly(2.47, xw, x => rbFn(x) - ts(x), () => ri), LAYER_MAT.water);
+  const xo = findEnd(x => Math.min(ri, rbFn(x) - ts(x)) > rp + 0.003);
+  if (xo > 2.5) two(poly(2.47, xo, x => Math.min(ri, rbFn(x) - ts(x)), () => rp), LAYER_MAT.oil);
+  const cylL = (r, x0, x1, mat) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, x1 - x0, 48, 1, true), mat); c.rotation.z = -PI / 2; c.position.set((x0 + x1) / 2, 0, -0.002); layerG.add(c); };
+  if (xw > 2.5) cylL(ri, 2.47, xw, LAYER_MAT.waterB);
+  if (xo > 2.5) cylL(rp, 2.47, xo, LAYER_MAT.oilB);
+}
+
+// ======================================================================
+//           FASE PESADA, FASE LIVIANA, SÓLIDOS
+// ======================================================================
+let tk102Liq, helixRot, scAxis, scTube, solidsChunks, scLen;
+function buildOutlets() {
+  const t = eqGroup('TK-102', V(2.27, F + 0.95, -0.5));
+  const shell = RB(t, 0.65, 0.72, 0.76, 0.02, MAT.ss, 2.27, F + 0.37, -0.52); t.userData.shell = shell;
+  tk102Liq = mesh(t, new THREE.BoxGeometry(0.61, 1, 0.72), new THREE.MeshStandardMaterial({ color: FLUID.water, roughness: 0.2, transparent: true, opacity: 0.8 }), 2.27, F + 0.02, -0.52, false);
+  tk102Liq.geometry.translate(0, 0.5, 0); tk102Liq.visible = false;
+  C(t, 0.07, 0.36, MAT.ss, 2.22, F + 0.9, AZ);
+  transmitter(t, V(2.45, F + 0.82, -0.3));
+  // P-102
+  const p = eqGroup('P-102', V(3.05, F + 0.75, AZ));
+  B(p, 0.75, 0.06, 0.32, MAT.frameD, 3.1, F + 0.03, AZ);
+  C(p, 0.13, 0.1, MAT.cast, 2.86, F + 0.22, AZ, 'x', 32);
+  C(p, 0.06, 0.12, MAT.cast, 2.96, F + 0.22, AZ, 'x');
+  motor(p, V(3.22, F + 0.22, AZ), qX(-1), 0.1, 0.32, 'blue');
+  // AT-402
+  const a = eqGroup('AT-402', V(3.3, F + 1.0, -0.9));
+  C(a, 0.05, 0.16, MAT.ss, 3.3, F + 0.55, -0.9, 'x');
+  RB(a, 0.2, 0.24, 0.1, 0.02, MAT.cabinet, 3.3, F + 0.8, -0.85);
+  const s1 = mesh(a, new THREE.PlaneGeometry(0.12, 0.07), MAT.screen, 3.3, F + 0.84, -0.799); s1.castShadow = false;
+  // HV-101, AT-401, XV-401
+  const hv = eqGroup('HV-101', V(2.22, F + 2.65, -0.65));
+  globeValve(hv, V(2.22, F + 2.25, -0.65), V(0, 0, 1), 0.035, V(1, 0, 0).add(V(0, 0.001, 0)), 'blueD');
+  gauge(hv, V(2.22, F + 2.36, -0.47), V(0, 0, 1));
+  const at = eqGroup('AT-401', V(2.45, F + 2.6, -0.85));
+  C(at, 0.055, 0.14, MAT.ss, 2.45, F + 2.25, -0.85, 'x');
+  RB(at, 0.18, 0.2, 0.09, 0.02, MAT.cabinet, 2.45, F + 2.0, -0.85);
+  const s2 = mesh(at, new THREE.PlaneGeometry(0.11, 0.06), MAT.screen, 2.45, F + 2.03, -0.804); s2.castShadow = false;
+  const x4 = eqGroup('XV-401', V(2.85, F + 2.6, -0.6));
+  xvInd.xv401 = ballValve(x4, V(2.75, F + 2.25, -0.85), V(1, 0, 0), 0.04, true);
+  flange(V(2.75, F + 2.25, -0.93), V(0, 0, -1), 0.04);
+  const xf = eqGroup('XV-601', V(1.85, F + 2.5, -0.95));
+  xvInd.xv601 = ballValve(xf, V(1.85, F + 2.15, -0.95), V(0, 0, 1), 0.03, true);
+  // transportador de tornillo SC-501
+  const sc = eqGroup('SC-501', V(7.2, 2.25, AZ));
+  const S0 = V(4.86, F + 0.36, AZ), ang = 22 * PI / 180, S1 = V(8.75, F + 0.36 + (8.75 - 4.86) * Math.tan(ang), AZ);
+  const dir = S1.clone().sub(S0).normalize(); scLen = S1.distanceTo(S0);
+  scAxis = new THREE.Group(); scAxis.position.copy(S0); scAxis.quaternion.setFromUnitVectors(XAX, dir); sc.add(scAxis);
+  scTube = C(scAxis, 0.165, scLen, MAT.ss, scLen / 2, 0, 0, 'x', 40);
+  scTube.material = MAT.ss.clone();
+  for (let s = 0.02; s < scLen; s += scLen / 3) { const p = S0.clone().addScaledVector(dir, s); flange(p, dir, 0.165); }
+  flange(S1, dir, 0.165);
+  B(scAxis, 0.4, 0.22, 0.42, MAT.ss, 0.05, 0.2, 0);
+  RB(scAxis, 0.22, 0.34, 0.34, 0.03, MAT.navy, scLen + 0.16, 0, 0);
+  motor(scAxis, V(scLen + 0.48, 0.02, 0), qX(-1), 0.09, 0.3, 'blue', false);
+  B(scAxis, 0.32, 0.5, 0.32, MAT.ss, scLen - 0.2, -0.3, 0).rotation.z = -ang;
+  helixRot = new THREE.Group(); scAxis.add(helixRot);
+  const hp = [], N = 700, h0 = 0.05, h1 = scLen - 0.05, pitch = 0.28;
+  for (let i = 0; i <= N; i++) { const x = h0 + (h1 - h0) * i / N, a = 2 * PI * (x - h0) / pitch; hp.push(x, 0.04 * Math.cos(a), 0.04 * Math.sin(a), x, 0.15 * Math.cos(a), 0.15 * Math.sin(a)); }
+  const id2 = []; for (let i = 0; i < N; i++) { const a = i * 2; id2.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const hg = new THREE.BufferGeometry(); hg.setAttribute('position', new THREE.Float32BufferAttribute(hp, 3)); hg.setIndex(id2); hg.computeVertexNormals();
+  mesh(helixRot, hg, MAT.scroll); C(helixRot, 0.04, scLen - 0.1, MAT.ss, scLen / 2, 0, 0, 'x', 16);
+  solidsChunks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(0.035), MAT.cake, 60); solidsChunks.visible = false; scAxis.add(solidsChunks);
+  // patas exteriores
+  const legX = 7.55, legY = S0.y + (legX - S0.x) * Math.tan(ang) - 0.17;
+  for (const dz of [-0.2, 0.2]) B(sc, 0.08, legY, 0.08, MAT.frameD, legX, legY / 2, AZ + dz);
+  B(sc, 0.08, 0.08, 0.48, MAT.frameD, legX, legY - 0.04, AZ);
+  B(sc, 0.5, 0.05, 0.5, MAT.frameD, legX, 0.025, AZ);
+}
+
+// ======================================================================
+//                     EXTERIOR: TANQUES, VOLQUETE, H-701
+// ======================================================================
+const TANKS = {};
+function tank(tag, key, x, z, liq, lblName) {
+  const R = 1.6, H = 5.0, g = eqGroup(tag, V(x, H + 0.9, z));
+  const shell = mesh(g, new THREE.CylinderGeometry(R, R, H, 64, 1, true), MAT.tank.clone(), x, H / 2 + 0.1, z);
+  shell.material.side = THREE.DoubleSide;
+  const roofM = mesh(g, new THREE.CylinderGeometry(0.15, R + 0.02, 0.32, 64), MAT.tank, x, H + 0.26, z);
+  C(g, R + 0.06, 0.1, MAT.concrete, x, 0.05, z, 'y', 64);
+  for (let i = 0; i < 3; i++) C(g, R + 0.012, 0.025, MAT.paint2, x, 0.8 + i * 1.6, z, 'y', 64);
+  const liqM = new THREE.MeshStandardMaterial({ color: liq, roughness: 0.25, transparent: true, opacity: 0.88 });
+  const lq = mesh(g, new THREE.CylinderGeometry(R - 0.03, R - 0.03, 1, 48), liqM, x, 0.12, z, false); lq.geometry.translate(0, 0.5, 0); lq.visible = false;
+  // escalera
+  const lz = z + R + 0.12, lx = x - 0.9;
+  for (const dx of [-0.22, 0.22]) instLocal('rod', g, V(lx + dx, H / 2 + 0.4, lz), new THREE.Euler(), V(0.022, H + 0.6, 0.022));
+  for (let y = 0.4; y < H + 0.5; y += 0.3) instLocal('rung', g, V(lx, y, lz), new THREE.Euler(0, 0, PI / 2), V(0.012, 0.44, 0.012));
+  for (let y = 2.3; y < H + 0.6; y += 0.5) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.015, 6, 20, PI), MAT.galv); t.position.set(lx, y, lz); t.rotation.set(PI / 2, 0, PI); g.add(t); }
+  // baranda superior
+  const rail = new THREE.Mesh(new THREE.TorusGeometry(R - 0.1, 0.02, 6, 64), MAT.galv); rail.rotation.x = PI / 2; rail.position.set(x, H + 1.35, z); g.add(rail);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * 2 * PI; instLocal('rod', g, V(x + Math.cos(a) * (R - 0.1), H + 0.85, z + Math.sin(a) * (R - 0.1)), new THREE.Euler(), V(0.015, 1.0, 0.015)); }
+  transmitter(g, V(x + 0.5, H + 0.52, z + 0.3), V(0, 0, 1));
+  C(g, 0.3, 0.06, MAT.tank, x - 0.6, H + 0.43, z - 0.5);
+  TANKS[key] = { shell, lq, H };
+  return g;
+}
+let skipFill, impeller;
+function buildYard() {
+  // suelo
+  const gr = mesh(scene, new THREE.CircleGeometry(80, 64), MAT.ground, 0, -0.06, 0, false); gr.rotation.x = -PI / 2;
+  // dique de contención
+  const bx0 = -5.6, bx1 = 8.6, bz0 = -7.6, bz1 = -3.25;
+  B(scene, bx1 - bx0, 0.05, bz1 - bz0, MAT.concrete, (bx0 + bx1) / 2, -0.03, (bz0 + bz1) / 2).castShadow = false;
+  for (const [x, z, w, d] of [[(bx0 + bx1) / 2, bz1, bx1 - bx0, 0.2], [(bx0 + bx1) / 2, bz0, bx1 - bx0, 0.2], [bx0, (bz0 + bz1) / 2, 0.2, bz1 - bz0], [bx1, (bz0 + bz1) / 2, 0.2, bz1 - bz0]]) B(scene, w, 0.6, d, MAT.concrete, x, 0.3, z);
+  tank('TK-101', 'tk101', -3.0, -5.4, FLUID.slop);
+  tank('TK-401', 'tk401', 1.8, -5.4, FLUID.oil);
+  tank('TK-402', 'tk402', 6.4, -5.4, FLUID.water);
+  // agitador TK-101
+  const g = EQ['TK-101'].g;
+  motor(g, V(-3.0, 5.62, -5.4), qYup(), 0.16, 0.42, 'blue', false);
+  C(g, 0.26, 0.22, MAT.navy, -3.0, 5.33, -5.4);
+  impeller = new THREE.Group(); impeller.position.set(-3.0, 0, -5.4); g.add(impeller);
+  C(impeller, 0.035, 4.6, MAT.ss, 0, 2.8, 0);
+  for (let i = 0; i < 3; i++) { const b = B(impeller, 0.55, 0.02, 0.14, MAT.ss, 0, 0.8, 0); b.rotation.y = i * 2 * PI / 3; b.position.set(Math.cos(i * 2 * PI / 3) * 0.28, 0.8, -Math.sin(i * 2 * PI / 3) * 0.28); b.rotation.x = 0.35; }
+  impeller.visible = false;
+  // serpentín
+  const coil = []; for (let i = 0; i <= 400; i++) { const a = i / 400 * 2 * PI * 4; coil.push(V(Math.cos(a) * 1.3, 0.45 + i / 400 * 1.2, Math.sin(a) * 1.3)); }
+  const coilM = mesh(g, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(coil), 600, 0.03, 8), MAT.ssDark, -3.0, 0, -5.4); coilM.visible = false; TANKS.tk101.coil = coilM;
+  // volquete
+  const sk = eqGroup('SK-501', V(9.3, 2.0, AZ));
+  const skx = 9.3, L = 3.4, W = 1.9, Hs = 1.25;
+  const skShape = new THREE.Shape([V(-L / 2 + 0.45, 0), V(L / 2 - 0.45, 0), V(L / 2, Hs), V(-L / 2, Hs)].map(v => new THREE.Vector2(v.x, v.y)));
+  for (const dz of [-W / 2, W / 2 - 0.04]) { const m = mesh(sk, new THREE.ExtrudeGeometry(skShape, { depth: 0.04, bevelEnabled: false }), MAT.yellow, skx, 0.02, AZ + dz); }
+  B(sk, L - 0.9, 0.05, W, MAT.yellow, skx, 0.045, AZ);
+  for (const s of [-1, 1]) { const e = B(sk, 0.05, Math.hypot(0.45, Hs), W, MAT.yellow, skx + s * (L / 2 - 0.225), Hs / 2 + 0.02, AZ); e.rotation.z = s * Math.atan2(0.45, Hs); }
+  for (const s of [-1, 1]) B(sk, 0.1, 0.12, W + 0.1, MAT.dark, skx + s * 1.1, 0.06, AZ);
+  for (const dz of [-W / 2 - 0.03, W / 2 + 0.03]) B(sk, L, 0.08, 0.06, MAT.yellow, skx, Hs, AZ + dz);
+  const fillShape = new THREE.Shape([[-L / 2 + 0.47, 0], [L / 2 - 0.47, 0], [L / 2 - 0.02, Hs], [-L / 2 + 0.02, Hs]].map(p => new THREE.Vector2(...p)));
+  skipFill = mesh(sk, new THREE.ExtrudeGeometry(fillShape, { depth: W - 0.1, bevelEnabled: false }), MAT.cake, skx, 0.07, AZ - W / 2 + 0.05);
+  skipFill.scale.y = 0.1;
+  // calentador de aceite térmico
+  const h = eqGroup('H-701', V(-8.2, 3.2, -3.0));
+  B(h, 2.6, 0.12, 1.4, MAT.frameD, -8.2, 0.06, -3.0);
+  C(h, 0.55, 1.8, MAT.paint2, -8.2, 0.85, -3.0, 'x', 40);
+  RB(h, 0.6, 0.9, 0.7, 0.03, MAT.red, -9.3, 0.7, -3.0);
+  C(h, 0.15, 3.2, MAT.ssDark, -7.6, 2.9, -3.0);
+  C(h, 0.2, 0.15, MAT.ssDark, -7.6, 4.55, -3.0);
+  RB(h, 0.5, 0.8, 0.35, 0.02, MAT.cabinet, -8.0, 0.75, -3.75);
+  motor(h, V(-7.3, 0.35, -2.5), qX(1), 0.1, 0.3, 'blue');
+  // conexión de camión
+  const tc = eqGroup('TRUCK');
+  C(tc, 0.06, 0.8, MAT.galv, -6.4, 0.4, -2.6);
+  ballValve(tc, V(-6.4, 0.9, -2.6), V(1, 0, 0), 0.05, false);
+  // soportes de cañería
+  for (const [x, z] of [[-2.1, -2.6], [0.6, -2.6], [3.3, -2.6], [3.7, -2.0], [5.5, -2.7], [-4.1, -2.6], [-7.3, -1.6]]) {
+    B(scene, 0.12, 0.05, 0.4, MAT.concrete, x, 0.0, z);
+  }
+}
+
+// ======================================================================
+//                     VENTILACIÓN Y DETECTORES
+// ======================================================================
+let fanRot;
+function buildSafety() {
+  const g = eqGroup('EF-901', V(5.95, CH - 0.2, 0.65));
+  C(g, 0.3, 0.25, MAT.paint2, CL - 0.15, CH - 0.6, 0.65, 'x', 40);
+  fanRot = new THREE.Group(); fanRot.position.set(CL - 0.12, CH - 0.6, 0.65); g.add(fanRot);
+  for (let i = 0; i < 5; i++) { const b = B(fanRot, 0.02, 0.24, 0.09, MAT.ssDark, 0, 0.13, 0); b.position.set(0, Math.cos(i * 2 * PI / 5) * 0.13, Math.sin(i * 2 * PI / 5) * 0.13); b.rotation.x = -i * 2 * PI / 5; b.rotation.y = 0.4; }
+  C(fanRot, 0.06, 0.08, MAT.dark, 0, 0, 0, 'x');
+  const d = eqGroup('AIT-901');
+  for (const [x, y, z] of [[3.6, CH - 0.45, 0.2], [-1.0, CH - 0.45, -1.1], [-3.4, F + 0.4, -1.12]]) {
+    RB(d, 0.12, 0.16, 0.08, 0.02, MAT.yellow, x, y, z);
+    C(d, 0.035, 0.06, MAT.dark, x, y - 0.11, z);
+  }
+  for (let k = 0; k < 2; k++) { B(g, 0.6, 0.4, 0.04, MAT.paint2, -2.5 + k * 3.2, CH - 0.55, -CW + 0.06); for (let i = 0; i < 7; i++) B(g, 0.56, 0.015, 0.03, MAT.dark, -2.5 + k * 3.2, CH - 0.72 + i * 0.05, -CW + 0.085); }
+}
+
+// ======================================================================
+//                         CAÑERÍAS DEL PROCESO
+// ======================================================================
+function buildPipes() {
+  const fl = SIM.fl;
+  const Y = F;
+  // exterior: ingreso de slop
+  pipe('inflow', [[-6.4, 0.9, -2.6], [-4.1, 0.9, -2.6], [-4.1, 0.9, -4.24]], 0.05, 'slop', { flow: () => fl.inflow, nom: 8 });
+  // succión desde TK-101
+  pipe('suction', [[-2.1, 0.5, -4.08], [-2.1, 0.5, -3.75], [-2.1, 0.86, -3.75], [-2.1, 0.86, -2.0], [-0.6, 0.86, -2.0], [-0.6, Y + 0.7, -CW], [-0.6, Y + 0.7, -0.75], [-0.6, Y + 0.49, -0.75]], 0.055, 'slop', { flow: () => fl.suction });
+  pipe('p101-f101', [[0.6, Y + 0.33, -0.75], [0.74, Y + 0.33, -0.75], [0.74, Y + 0.42, -0.75], [0.82, Y + 0.42, -0.75]], 0.045, 'slop', { flow: () => fl.feed, flanges: false });
+  pipe('f101-e101', [[1.46, Y + 0.42, -0.75], [1.58, Y + 0.42, -0.75], [1.58, Y + 1.05, -0.75], [1.58, Y + 1.05, -0.33], [-1.0, Y + 1.05, -0.33], [-1.0, Y + 1.05, -0.75], [-1.0, Y + 1.25, -0.75]], 0.045, 'slop', { flow: () => fl.feed });
+  pipe('e101-xv102', [[0.45, Y + 1.66, -0.75], [0.45, Y + 1.85, -0.75], [1.48, Y + 1.85, -0.75]], 0.045, 'hot', { flow: () => fl.feed, ins: true });
+  pipe('recirc', [[1.55, Y + 1.85, -0.86], [1.55, Y + 1.85, -1.02], [1.55, Y + 2.48, -1.02]], 0.045, 'hot', { flow: () => fl.recirc, ins: true });
+  pipe('retHdr', [[1.55, Y + 2.48, -1.02], [0.6, Y + 2.48, -1.02], [0.6, Y + 2.48, -1.5], [0.6, Y + 2.48, -2.6], [-1.9, Y + 2.48, -2.6], [-1.9, Y + 2.48, -4.1], [-1.9, 4.7, -4.1], [-1.9, 4.7, -4.24]], 0.045, 'hot', { flow: () => fl.retHdr, ins: true });
+  pipe('decFeed', [[1.62, Y + 1.85, -0.75], [1.72, Y + 1.85, -0.75], [1.72, Y + 1.85, AZ], [1.72, AY, AZ], [1.86, AY, AZ]], 0.045, 'hot', { flow: () => fl.decFeed, ins: true, fluidFn: () => SIM.st.flush ? 'flush' : 'hot' });
+  pipe('flush', [[1.85, Y + 2.15, -CW], [1.85, Y + 2.15, -1.01], [1.85, Y + 2.15, AZ], [1.72, Y + 2.15, AZ], [1.72, Y + 1.97, AZ]], 0.03, 'flush', { flow: () => fl.flush, nom: 3 });
+  pipe('demulSuc', [[-2.05, Y + 0.24, -0.06], [-2.05, Y + 0.24, 0.12], [-2.05, Y + 0.48, 0.12]], 0.012, 'demul', { flow: () => fl.demul, nom: 1, small: true, flanges: false });
+  pipe('demul', [[-1.92, Y + 0.6, 0.14], [-1.75, Y + 0.6, 0.14], [-1.75, Y + 0.8, 0.14], [-1.75, Y + 0.8, -0.3], [0.7, Y + 0.8, -0.3], [0.7, Y + 0.8, -0.75], [0.7, Y + 0.37, -0.75]], 0.012, 'demul', { flow: () => fl.demul, nom: 1, small: true, flanges: false });
+  pipe('polySuc', [[-2.9, Y + 0.25, -0.36], [-2.9, Y + 0.25, -0.24], [-2.82, Y + 0.25, -0.24], [-2.82, Y + 0.2, -0.12]], 0.022, 'poly', { flow: () => fl.poly, nom: 0.2, small: true, flanges: false });
+  pipe('poly', [[-2.78, Y + 0.2, -0.12], [-2.6, Y + 0.2, -0.12], [-2.6, Y + 2.2, -0.12], [-2.6, Y + 2.2, -1.13], [1.66, Y + 2.2, -1.13], [1.66, Y + 2.2, -0.2], [1.8, Y + 2.2, -0.2], [1.8, AY, -0.2], [1.8, AY, AZ + 0.03]], 0.02, 'poly', { flow: () => fl.poly, nom: 0.2, small: true, flanges: false });
+  pipe('oil', [[2.22, Y + 2.05, AZ], [2.22, Y + 2.25, AZ], [2.22, Y + 2.25, -0.85], [2.68, Y + 2.25, -0.85]], 0.04, 'oil', { flow: () => fl.oil, nom: 2.5, ins: true });
+  pipe('oilTank', [[2.82, Y + 2.25, -0.85], [3.3, Y + 2.25, -0.85], [3.3, Y + 2.25, -1.5], [3.3, Y + 2.25, -2.6], [2.7, Y + 2.25, -2.6], [2.7, Y + 2.25, -3.95], [2.7, 4.7, -3.95], [2.7, 4.7, -4.08]], 0.04, 'oil', { flow: () => fl.oilTank, nom: 2.5, ins: true });
+  pipe('oilRec', [[2.75, Y + 2.25, -0.95], [2.75, Y + 2.25, -1.02], [2.75, Y + 2.48, -1.02], [1.62, Y + 2.48, -1.02]], 0.04, 'oil', { flow: () => fl.oilRec, nom: 2.5, ins: true });
+  pipe('p102suc', [[2.6, Y + 0.12, AZ], [2.78, Y + 0.12, AZ], [2.78, Y + 0.22, AZ], [2.8, Y + 0.22, AZ]], 0.05, 'water', { flow: () => fl.p102, nom: 8, flanges: false });
+  pipe('water', [[2.86, Y + 0.35, AZ], [2.86, Y + 0.55, AZ], [2.86, Y + 0.55, -0.9], [3.7, Y + 0.55, -0.9], [3.7, Y + 0.55, -1.5], [3.7, 1.0, -1.5], [3.7, 1.0, -2.7], [5.5, 1.0, -2.7], [5.5, 1.0, -3.95], [5.5, 4.7, -3.95], [5.5, 4.7, -4.08]], 0.04, 'water', { flow: () => fl.p102, nom: 8 });
+  pipe('heatSup', [[-7.3, 1.2, -2.6], [-7.3, Y + 2.3, -2.6], [-7.3, Y + 2.3, -1.45], [-0.9, Y + 2.3, -1.45], [-0.9, Y + 2.3, -0.75], [-0.9, Y + 2.08, -0.75]], 0.032, 'heat', { flow: () => fl.heat, nom: 1, ins: true });
+  pipe('heatSup2', [[-0.9, Y + 1.92, -0.75], [-0.9, Y + 1.66, -0.75]], 0.032, 'heat', { flow: () => fl.heat, nom: 1, ins: true });
+  pipe('heatRet', [[0.15, Y + 1.66, -0.75], [0.15, Y + 2.3, -0.75], [0.15, Y + 2.3, -1.62], [-7.6, Y + 2.3, -1.62], [-7.6, 1.2, -1.62], [-7.6, 1.2, -2.45]], 0.032, 'heat', { flow: () => fl.heat, nom: 1, ins: true });
+  pipe('n2', [[5.7, F + 1.55, 0.82], [5.7, F + 2.25, 0.82], [4.87, F + 2.25, 0.82], [4.87, F + 2.25, AZ + 0.1], [4.87, F + 2.05, AZ + 0.1]], 0.01, 'n2', { flow: () => fl.n2, nom: 1, small: true, flanges: false });
+}
+
+// ======================================================================
+//                         ETIQUETAS
+// ======================================================================
+const LBL = {
+  'X-101': ['Decantador trifásico', () => N(SIM.st.n, 0) + ' rpm'],
+  'P-101': ['Bomba de alimentación', () => N(SIM.st.q, 1) + ' m³/h'],
+  'F-101': ['Filtro dúplex', () => 'ΔP ' + N(SIM.st.dp, 2) + ' bar'],
+  'E-101': ['Calentador', () => N(SIM.st.Tout, 0) + ' °C'],
+  'FT-101': ['Coriolis', () => N(SIM.st.d.rhoF, 0) + ' kg/m³'],
+  'XV-102': ['Válvula 3 vías', () => ({ recirc: 'recircula', decanter: 'a X-101', none: 'cerrada' })[SIM.st.route]],
+  'AT-401': ['BS&W aceite', () => SIM.producing ? N(SIM.st.d.bsw, 2) + ' %' : '—'],
+  'XV-401': ['Desvío de aceite', () => SIM.st.divert ? 'a TK-101' : 'a TK-401'],
+  'AT-402': ['Aceite en agua', () => SIM.producing ? N(SIM.st.d.oiw, 0) + ' mg/L' : '—'],
+  'TK-102': ['Cuba fase pesada', () => N(SIM.pct('tk102'), 0) + ' %'],
+  'SC-501': ['Tornillo de sólidos', () => N(SIM.st.d.cakeKg / 1000, 2) + ' t/h'],
+  'SK-501': ['Volquete', () => N(SIM.pct('skip'), 0) + ' %'],
+  'TK-101': ['Slop a tratar', () => N(SIM.pct('tk101'), 0) + ' %'],
+  'TK-401': ['Aceite recuperado', () => N(SIM.pct('tk401'), 0) + ' %'],
+  'TK-402': ['Agua separada', () => N(SIM.pct('tk402'), 0) + ' %'],
+  'TK-201': ['Demulsificante', () => N(SIM.pct('tk201'), 0) + ' %'],
+  'TK-301': ['Polímero', () => N(SIM.pct('tk301'), 0) + ' %'],
+  'CP-001': ['Sala eléctrica', () => N(SIM.st.P.tot, 0) + ' kW'],
+  'H-701': ['Aceite térmico', () => N(SIM.st.duty, 0) + ' kW'],
+  'N2-901': ['Inertización N₂', () => 'O₂ ' + N(SIM.st.O2, 1) + ' %'],
+  'EF-901': ['Extractor y gas', () => N(SIM.st.LEL, 0) + ' % LEL']
+};
+const ALM_TAG = { 'AT-401': ['bsw'], 'AT-402': ['oiw'], 'F-101': ['pd'], 'X-101': ['vib', 'tq', 'ovl', 'bt', 'o2'], 'E-101': ['tl', 'heat', 'hloss'], 'TK-101': ['l101'], 'TK-401': ['l401'], 'TK-402': ['l402'], 'SK-501': ['lsk'], 'TK-201': ['l201'], 'EF-901': ['lel'] };
+const labels = {};
+const LBL_FAR = { 'FT-101': 8, 'XV-102': 8, 'AT-401': 8, 'XV-401': 8, 'AT-402': 8, 'TK-102': 9, 'N2-901': 9, 'EF-901': 9, 'H-701': 16, 'TK-201': 14, 'TK-301': 14, 'F-101': 13, 'CP-001': 14 };
+function buildLabels() {
+  for (const tag in LBL) {
+    const e = EQ[tag]; if (!e || !e.lbl) continue;
+    const div = document.createElement('div'); div.className = 'lbl';
+    div.innerHTML = `<b>${tag}</b> <em></em><span>${LBL[tag][0]}</span>`;
+    div.style.pointerEvents = 'auto';
+    div.addEventListener('click', ev => { ev.stopPropagation(); SIM.showInfo(tag); });
+    const o = new CSS2DObject(div); o.position.copy(e.lbl); scene.add(o);
+    labels[tag] = { div, em: div.querySelector('em'), fn: LBL[tag][1], obj: o, far: LBL_FAR[tag] || 99 };
+  }
+}
+
+// ======================================================================
+//                         CONSTRUCCIÓN
+// ======================================================================
+buildContainer(); buildElec(); buildChem(); buildFeed(); buildDecanter(); buildOutlets(); buildYard(); buildSafety(); buildPipes(); buildLabels();
+buildInstances();
+document.getElementById('loading').hidden = true;
+SIM._three = { renderer, scene, camera };
+for (const k in EQ) EQ[k].g.traverse(o => { if (o.isMesh) o.userData.tag = k; });
+
+// ---------------- cámara ----------------
+const CAMS = {
+  general: [V(12.5, 8.5, 15.5), V(1.0, 1.2, -2.2)],
+  interior: [V(0.4, 3.6, 15.2), V(0.4, 1.15, -0.4)],
+  decanter: [V(2.6, 2.9, 3.1), V(3.6, 1.55, -0.45)],
+  tanks: [V(13, 8.5, 5), V(2, 2.6, -5.0)],
+  elec: [V(-2.6, 3.1, 2.2), V(-5.1, 1.2, -0.3)]
+};
+camera.position.set(0.4, 3.6, 15.2); controls.target.set(0.4, 1.15, -0.4);
+SIM.resetView = () => { SIM.focus && SIM.focus(null); camAnim = { p0: camera.position.clone(), t0: controls.target.clone(), p: V(0.4, 3.6, 15.2), t: V(0.4, 1.15, -0.4), k: 0 }; aBowl = aScroll = 0; };
+let camAnim = null;
+function goCam(k) { const [p, t] = CAMS[k]; camAnim = { p0: camera.position.clone(), t0: controls.target.clone(), p, t, k: 0 }; }
+document.querySelectorAll('[data-cam]').forEach(b => b.addEventListener('click', () => goCam(b.dataset.cam)));
+
+// ---------------- conmutadores ----------------
+const view = { flow: false, cut: false, roof: false, lbl: true };
+const tog = (id, key, fn) => { const b = document.getElementById(id); b.addEventListener('click', () => { view[key] = !view[key]; b.setAttribute('aria-pressed', view[key]); fn && fn(); }); };
+tog('tFlow', 'flow', applyFlow);
+tog('tCut', 'cut', applyCut);
+tog('tRoof', 'roof', () => roof.visible = view.roof);
+tog('tLbl', 'lbl', () => host.classList.toggle('nolbl', !view.lbl));
+function applyFlow() {
+  const f = view.flow;
+  for (const L of LINES) L.mesh.material = f ? flowMat(L.fluidFn ? L.fluidFn() : L.fluid) : L.real;
+  for (const k in TANKS) { const T = TANKS[k]; T.shell.material.transparent = f; T.shell.material.opacity = f ? 0.22 : 1; T.shell.material.depthWrite = !f; T.shell.material.needsUpdate = true; T.lq.visible = f; if (T.coil) T.coil.visible = f; }
+  impeller.visible = f; tk102Liq.visible = f; polyLevel.visible = f;
+  const sh = EQ['TK-102'].g.userData.shell; sh.material = f ? flowMat('water') : MAT.ss;
+  scTube.material.transparent = f; scTube.material.opacity = f ? 0.25 : 1; scTube.material.depthWrite = !f; scTube.material.needsUpdate = true;
+}
+function applyCut() {
+  const c = view.cut;
+  for (const m of [MAT.bowl, MAT.scroll]) { m.clippingPlanes = c ? CLIP : null; m.needsUpdate = true; }
+  feedTube.material = c ? flowMat('hot') : MAT.ss;
+}
+
+// ---------------- selección ----------------
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+let selBox = null, down = null;
+const pickables = []; for (const k in EQ) if (k !== 'CNT' && k !== 'TRUCK') EQ[k].g.traverse(o => { if (o.isMesh) pickables.push(o); });
+function pick(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(pickables, false).find(h => h.object.visible && (!h.object.material.clippingPlanes || h.point.z <= AZ + 0.01));
+  return hit ? hit.object.userData.tag : null;
+}
+renderer.domElement.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  const t = pick(e); if (t && INFO[t]) SIM.showInfo(t); else SIM.hideInfo();
+});
+let hoverT = 0;
+renderer.domElement.addEventListener('pointermove', e => { const now = performance.now(); if (now - hoverT < 80 || e.buttons) return; hoverT = now; renderer.domElement.style.cursor = pick(e) ? 'pointer' : 'grab'; });
+SIM.selectListeners.push(tag => {
+  if (selBox) { scene.remove(selBox); selBox = null; }
+  for (const k in labels) labels[k].div.classList.toggle('sel', k === tag);
+  if (tag && EQ[tag]) { selBox = new THREE.BoxHelper(EQ[tag].g, 0x1b78b9); selBox.material.depthTest = false; selBox.renderOrder = 10; scene.add(selBox); }
+  document.getElementById('hint').hidden = true;
+});
+
+// ---------------- foco en un equipo (escenarios) ----------------
+let alertBox = null;
+SIM.focus = (tag, alert) => {
+  if (alertBox) { scene.remove(alertBox); alertBox = null; }
+  if (!tag || !EQ[tag]) return;
+  const g = EQ[tag].g, box = new THREE.Box3().setFromObject(g);
+  const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3()).length();
+  const dist = Math.max(2.6, sz * 1.25);
+  const dir = (c.z < -2 ? V(-0.35, 0.45, -1) : V(0.45, 0.42, 1)).normalize();
+  camAnim = { p0: camera.position.clone(), t0: controls.target.clone(), p: c.clone().addScaledVector(dir, dist), t: c, k: 0 };
+  if (alert) { alertBox = new THREE.BoxHelper(g, 0xd0453a); alertBox.material.depthTest = false; alertBox.renderOrder = 11; scene.add(alertBox); }
+};
+const C_WATER = new THREE.Color(FLUID.water), C_DIRTY = new THREE.Color(0x7d7860), C_OIL = new THREE.Color(FLUID.oil), C_WETOIL = new THREE.Color(0xa08452);
+
+// ---------------- tamaño y tema ----------------
+function resize() { const w = host.clientWidth, h = host.clientHeight; if (!w || !h) return; renderer.setSize(w, h); lblR.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(host); resize();
+function theme() {
+  const cs = getComputedStyle(document.documentElement);
+  const sc = cs.getPropertyValue('--scene').trim() || '#dfe6ed';
+  scene.fog.color.set(sc);
+  const dark = (cs.colorScheme || '').includes('dark');
+  MAT.ground.color.set(dark ? 0x6c6a66 : 0xffffff); MAT.concrete.color.set(dark ? 0x8a8883 : 0xffffff);
+  renderer.toneMappingExposure = dark ? 0.85 : 1.05;
+}
+theme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// ======================================================================
+//                         ANIMACIÓN
+// ======================================================================
+const tmpM = new THREE.Matrix4(), tmpV = new THREE.Vector3(), tmpQ = new THREE.Quaternion(), tmpS = new THREE.Vector3(1, 1, 1);
+let aBowl = 0, aScroll = 0, aHelix = 0, aImp = 0, aFan = 0, aPoly = 0, hoodA = 0, lblT = 0, chunkPhase = 0;
+function particleUpdate(L, dt) {
+  const q = L.flow ? L.flow() : 0, on = view.flow && q > 1e-4;
+  L.parts.visible = on; if (!on) return;
+  if (L.fluidFn) { const f = L.fluidFn(); L.pm.color.setHex(FLUID[f]); L.mesh.material = flowMat(f); }
+  const v = 0.25 + 0.75 * Math.min(1, q / L.nom);
+  L.phase = (L.phase + v * dt / L.len) % 1;
+  for (let i = 0; i < L.np; i++) {
+    const u = (i / L.np + L.phase) % 1, f = u * (L.NS - 1), k = Math.floor(f), w = f - k, a = k * 3, b = Math.min(L.NS - 1, k + 1) * 3, s = L.samples;
+    tmpV.set(s[a] + (s[b] - s[a]) * w, s[a + 1] + (s[b + 1] - s[a + 1]) * w, s[a + 2] + (s[b + 2] - s[a + 2]) * w);
+    tmpM.compose(tmpV, tmpQ, tmpS); L.parts.setMatrixAt(i, tmpM);
+  }
+  L.parts.instanceMatrix.needsUpdate = true;
+}
+const indMat = (on, warn) => warn ? MAT.lampA : on ? MAT.lampG : MAT.yellow;
+SIM.onFrame.push(dt => {
+  const st = SIM.st;
+  // cámara
+  if (camAnim) { camAnim.k = Math.min(1, camAnim.k + dt / 0.9); const e = 1 - Math.pow(1 - camAnim.k, 3); camera.position.lerpVectors(camAnim.p0, camAnim.p, e); controls.target.lerpVectors(camAnim.t0, camAnim.t, e); if (camAnim.k >= 1) camAnim = null; }
+  controls.update();
+  // rotaciones
+  const w = st.n / 3600 * 9;
+  aBowl += w * dt; aScroll += Math.max(0, w - st.dn * 20 / 3600 * 9) * dt;
+  bowlRot.rotation.x = aBowl; scrollRot.rotation.x = aScroll;
+  if (st.screw) aHelix += 3.2 * dt; helixRot.rotation.x = aHelix;
+  aImp += 1.6 * dt; impeller.rotation.y = aImp;
+  if (st.vent) aFan += 14 * dt; fanRot.rotation.x = aFan;
+  // vibración
+  const amp = Math.max(0, st.vib - 1.5) * 0.0009;
+  shake.position.set((Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp, (Math.random() - 0.5) * amp);
+  // cubierta
+  const tgt = view.cut ? 1 : 0; hoodA += (tgt - hoodA) * Math.min(1, dt * 3); hoodPivot.rotation.x = -1.15 * hoodA;
+  // capas del bowl
+  const feeding = SIM.producing, fl = st.flush || (st.d.watQ > 0.3 && !feeding);
+  layerG.visible = view.cut && hoodA > 0.3 && st.n > 300 && (feeding || fl || st.d.oilQ > 0.05);
+  if (layerG.visible) {
+    const dd = st.d, flushing = !feeding;
+    LAYER_MAT.water.color.lerpColors(C_WATER, C_DIRTY, flushing ? 0 : Math.min(1, dd.tss / 20000 + dd.oiw / 6000));
+    LAYER_MAT.oil.color.lerpColors(C_OIL, C_WETOIL, flushing ? 0 : Math.min(1, dd.bsw / 4));
+  }
+  if (layerG.visible) buildLayers(0.232 + 0.03 * (SIM.sp.iface - 50) / 50, Math.max(0.3, Math.min(2.2, st.tq / 60)), feeding ? 'run' : 'flush');
+  // partículas
+  for (const L of LINES) particleUpdate(L, dt);
+  // sólidos en el tornillo
+  const cakeOn = view.flow && SIM.fl.cake > 0;
+  solidsChunks.visible = cakeOn;
+  if (cakeOn) { chunkPhase = (chunkPhase + 0.12 * dt) % 1; for (let i = 0; i < 60; i++) { const u = (i / 60 + chunkPhase) % 1, a = i * 2.4; tmpV.set(0.08 + u * (scLen - 0.2), -0.1 + Math.sin(a) * 0.03, Math.cos(a) * 0.06); tmpM.compose(tmpV, tmpQ, tmpS); solidsChunks.setMatrixAt(i, tmpM); } solidsChunks.instanceMatrix.needsUpdate = true; }
+  // niveles
+  for (const k in TANKS) { const T = TANKS[k]; T.lq.scale.y = Math.max(0.01, SIM.pct(k) / 100 * (T.H - 0.1)); }
+  tk102Liq.scale.y = Math.max(0.01, SIM.pct('tk102') / 100 * 0.66);
+  ibcLiquid.scale.y = Math.max(0.01, SIM.pct('tk201') / 100 * 0.94);
+  polyLevel.scale.y = Math.max(0.01, SIM.pct('tk301') / 100 * 1.1);
+  skipFill.scale.y = Math.max(0.02, SIM.pct('skip') / 100);
+  // indicadores
+  xvInd.xv102.material = st.route === 'decanter' ? MAT.lampG : st.route === 'recirc' ? MAT.lampA : MAT.yellow;
+  xvInd.xv401.material = st.divert ? MAT.lampA : (SIM.fl.oil > 0 ? MAT.lampG : MAT.yellow);
+  xvInd.xv601.material = st.flush ? MAT.lampG : MAT.yellow;
+  for (const b of ['A', 'B']) basketLamps[b].material = st.cleanT[b] > 0 ? MAT.lampA : (st.basket === b ? (st.dp > 0.6 ? MAT.lampR : MAT.lampG) : MAT.lampOff);
+  // etiquetas
+  lblT += dt;
+  if (lblT > 0.3 && view.lbl) {
+    lblT = 0;
+    for (const k in labels) {
+      const L = labels[k], dist = camera.position.distanceTo(L.obj.position);
+      L.obj.visible = dist < L.far || L.div.classList.contains('sel');
+      L.div.classList.toggle('far', dist > 11);
+      L.em.textContent = '· ' + L.fn();
+      const keys = ALM_TAG[k] || []; labels[k].div.classList.toggle('al', keys.some(a => SIM.alarms.has(a)));
+    }
+  }
+  if (selBox) selBox.update();
+  if (alertBox) alertBox.update();
+  renderer.render(scene, camera); lblR.render(scene, camera);
+});
+
+</script>
+</body>
+</html>
