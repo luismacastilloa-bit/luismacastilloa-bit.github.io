@@ -14,6 +14,8 @@
   --accent:#1b78b9; --accent-soft:#e3f0f9; --on-accent:#ffffff; --ok:#2f9a5f; --warn:#c48a12; --alarm:#d0453a; --idle:#8a96a3;
   --f-disp:"Red Hat Display",system-ui,sans-serif; --f-body:"Red Hat Text",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,monospace;
   --sky-top:#dfe8f1; --sky-bot:#f4f6f8; --shadow:0 1px 2px rgba(20,35,50,.06),0 4px 14px rgba(20,35,50,.06);
+  --line-2:#c3ccd6; --faint:#c6ced7; --plc-on:#13973f; --plc-tv:rgb(19 151 63 / .16);
+  --desk:#cfd6de;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){
@@ -21,6 +23,8 @@
     --bg:#10151b; --panel:#17202a; --panel-2:#1d2833; --line:#2a3846; --fg:#e0e6ec; --muted:#93a1b0;
     --accent:#4ea6e2; --accent-soft:#18324a; --on-accent:#07131d; --ok:#4cc184; --warn:#e2ad3c; --alarm:#ef6a5c; --idle:#6b7988;
     --sky-top:#16212c; --sky-bot:#0f151b; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+    --line-2:#3a4a5a; --faint:#3a4856; --plc-on:#3fd27e; --plc-tv:rgb(63 210 126 / .16);
+    --desk:#0b1015;
     color-scheme: dark;
   }
 }
@@ -28,9 +32,12 @@
   --bg:#10151b; --panel:#17202a; --panel-2:#1d2833; --line:#2a3846; --fg:#e0e6ec; --muted:#93a1b0;
   --accent:#4ea6e2; --accent-soft:#18324a; --on-accent:#07131d; --ok:#4cc184; --warn:#e2ad3c; --alarm:#ef6a5c; --idle:#6b7988;
   --sky-top:#16212c; --sky-bot:#0f151b; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  --line-2:#3a4a5a; --faint:#3a4856; --plc-on:#3fd27e; --plc-tv:rgb(63 210 126 / .16);
+  --desk:#0b1015;
   color-scheme: dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0;height:100%}
 body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -52,7 +59,15 @@ h1{font:800 24px/1.1 var(--f-disp);color:var(--accent);margin:6px 0 4px;letter-s
 .seg button.on{background:var(--accent);color:var(--on-accent)}
 .iconbtn{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:5px 9px;cursor:pointer;font:600 12px var(--f-body)}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 430px;flex:1 1 0;min-height:560px}
-.view{position:relative;overflow:hidden;background:linear-gradient(180deg,var(--sky-top),var(--sky-bot) 70%);border-right:1px solid var(--line)}
+.view{position:relative;display:flex;flex-direction:column;min-height:0;min-width:0;border-right:1px solid var(--line);background:var(--bg)}
+.vtabs{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+.vtabs .seg .vtab{border:0;background:none;padding:7px 13px;cursor:pointer;font:600 13px var(--f-disp);color:var(--muted)}
+.vtabs .seg .vtab+.vtab{border-left:1px solid var(--line)}
+.vtabs .seg .vtab[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+.vtab-note{font-size:12.5px;color:var(--muted)}
+.stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:linear-gradient(180deg,var(--sky-top),var(--sky-bot) 70%)}
+.pane{position:absolute;inset:0;z-index:5;overflow:auto;background:var(--bg)}
+.stage:not([data-v="3d"]) .viewbar,.stage:not([data-v="3d"]) .legend,.stage:not([data-v="3d"]) .hint{display:none}
 #three{position:absolute;inset:0;z-index:0}
 #three canvas{display:block;outline:none}
 .labels{position:absolute;inset:0;pointer-events:none;z-index:1}
@@ -73,7 +88,7 @@ h1{font:800 24px/1.1 var(--f-disp);color:var(--accent);margin:6px 0 4px;letter-s
 .lbl.big{font-size:12px;border-left-width:4px}
 .lbl.ph{font:600 11px var(--f-body);border-left-color:var(--fg);background:color-mix(in srgb,var(--panel) 75%,transparent);pointer-events:none}
 .lbl.hide{opacity:0;pointer-events:none}
-.ficha{position:absolute;right:12px;top:64px;width:min(360px,calc(100% - 24px));max-height:calc(100% - 120px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:5;padding:14px 16px}
+.ficha{position:absolute;right:12px;top:64px;z-index:7!important;width:min(360px,calc(100% - 24px));max-height:calc(100% - 120px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);z-index:5;padding:14px 16px}
 .ficha h3{margin:0;font:800 17px/1.2 var(--f-disp);color:var(--fg)}
 .ficha .tag{font:600 11px var(--f-mono);color:var(--accent);letter-spacing:.04em}
 .ficha .x{position:absolute;right:10px;top:8px;border:0;background:transparent;font-size:20px;cursor:pointer;color:var(--muted)}
@@ -154,6 +169,105 @@ table.bal tr.tot td{font-weight:700}
 .chip{display:inline-block;font:600 11px var(--f-mono);padding:2px 7px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);color:var(--muted)}
 footer{padding-block:10px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));flex:none;border-top:1px solid var(--line);background:var(--panel);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 footer b{color:var(--fg)}
+
+/* ---------- HMI (grises ISA-101, igual en tema claro y oscuro) ---------- */
+#hmi{container-type:size;display:grid;place-items:center;align-content:center;gap:8px;padding:12px;background:#2a2f35}
+.hmi-wrap{position:relative;width:min(100cqw - 24px,(100cqh - 56px) * 1.684);aspect-ratio:1280/760;border:9px solid #15181c;border-radius:10px;background:#15181c;box-shadow:0 14px 30px rgb(0 0 0 / .35)}
+.hmi-cap{max-width:min(100cqw - 24px,(100cqh - 56px) * 1.684);font-size:12px;color:#b9c0c7;text-align:center;line-height:1.35;margin:0}
+.hmi-cap b{color:#e6eaee;font-weight:600}
+@container (max-width:760px){ #hmi{place-items:start;align-content:start} .hmi-wrap{width:900px} .hmi-cap{max-width:900px;text-align:left} }
+svg.hmi{display:block;width:100%;height:100%;font-family:"Red Hat Text",Arial,sans-serif}
+.hbg{fill:#d6d8da} .htop{fill:#3b4148} .hpanel{fill:#e2e4e6;stroke:#b5b9bd}
+.htt{fill:#f1f3f5;font-size:15px;font-weight:700;letter-spacing:.06em} .htt2{fill:#c9ced3;font-size:12px;font-family:"JetBrains Mono",monospace}
+.hstate{fill:#5c636b} .hstate.TRIP,.hstate.ESD{fill:#d81f1a} .hstate.HOLD{fill:#e98400} .hstt{fill:#fff;font-size:13px;font-weight:700;letter-spacing:.1em}
+.hcb{stroke:#22272b;stroke-width:1} .hcb.p1{fill:#d81f1a} .hcb.p2{fill:#e98400} .hcb.p3{fill:#f0cf00} .hcb.z{fill:#575e66;stroke:none}
+.hcbt{font-size:14px;font-weight:700;font-family:"JetBrains Mono",monospace;fill:#111} .hcbt.z{fill:#aeb4ba}
+.hsec{fill:#4a5056;font-size:11px;font-weight:700;letter-spacing:.14em}
+.hzone{fill:none;stroke:#a3a8ad;stroke-width:1.2;stroke-dasharray:7 5}
+.hl{fill:none;stroke:#a4a9ae;stroke-width:2;stroke-linejoin:round} .hl.on{stroke:#2c3136;stroke-width:3.4}
+.hl.el{stroke-dasharray:5 4;stroke-width:1.6} .hl.el.on{stroke-width:2.4}
+.he{fill:#eef0f1;stroke:#555c63;stroke-width:1.6} .he.on{fill:#555c63;stroke:#2c3136}
+.he.tk{fill:#eef0f1} .hlv{fill:#8b97a3}
+.hpt{fill:none;stroke:#555c63;stroke-width:1.4} .he.on+.hpt{stroke:#eef0f1}
+.hd{fill:none;stroke:#555c63;stroke-width:1.3}
+.hxt{fill:#2c3136;font-size:12px;font-weight:700;letter-spacing:.08em;pointer-events:none} .hxt.s{font-size:9.5px;letter-spacing:.14em}
+.hact{fill:#eef0f1;stroke:#555c63;stroke-width:1.2}
+.hin{fill:#f6f7f8;stroke:#555c63;stroke-width:1.3} .hit{fill:#30353a;font-size:9.5px;font-weight:700}
+.ht{fill:#2c3136;font-size:11.5px;font-weight:600} .hs{fill:#5d646b;font-size:10.5px}
+.hvb{fill:#f6f7f8;stroke:#a3a8ad} .hv{fill:#1d2125;font-size:11.5px;font-family:"JetBrains Mono",monospace;font-weight:600}
+.hq{cursor:pointer} .hq:hover .he,.hq:hover .hin,.hq:hover .hvs{stroke:#1d6fb8;stroke-width:2.4}
+.hvs{fill:none;stroke:#555c63;stroke-width:1.8} .hgrid{stroke:#4a5056;stroke-width:1.4;stroke-dasharray:3 4}
+.hw{fill:#9aa6b2} .hpad{fill:#b9b2a5} .hsol{fill:#6f6a63} .hgas{fill:#f7f8f9} .hoil{fill:#e9ebec}
+.hsp{stroke:#1d2125;stroke-width:2}
+.hal rect{stroke:#111;stroke-width:1} .hal text{font-size:11px;font-weight:700;fill:#111;font-family:"JetBrains Mono",monospace}
+.hal.p1 rect{fill:#d81f1a} .hal.p1 text{fill:#fff} .hal.p2 rect{fill:#e98400} .hal.p3 rect{fill:#f0cf00}
+.hk{fill:#3a4046;font-size:11.5px} .hkv{fill:#1d2125;font-size:13px;font-weight:700;font-family:"JetBrains Mono",monospace}
+.hkb{fill:#c8cbcf} .hkn{fill:#a7b2bd} .hkl{stroke:#5f666d;stroke-width:2} .hkl.hh{stroke:#24292e;stroke-width:2.6}
+.hkp{fill:#24292e} .hkp.dev{fill:#24292e;stroke:#e98400;stroke-width:1.5} .hkp.al{fill:#e98400;stroke:#111;stroke-width:1}
+.hbtn{cursor:pointer} .hbtn rect{fill:#eceeef;stroke:#5f666d;stroke-width:1.3} .hbtn text{fill:#1d2125;font-size:12px;font-weight:700;letter-spacing:.08em}
+.hbtn:hover rect{stroke:#1d6fb8;stroke-width:2} .hbtn.dis{opacity:.4;pointer-events:none}
+.hbtn.esd rect{fill:#c9cdd1}
+.hmsg{fill:#30353a;font-size:12px} .hmsg.warn{fill:#8a5300} .hmsg.alarm{fill:#b3120e;font-weight:600}
+.hcol{fill:#5d646b;font-size:10px;font-weight:700;letter-spacing:.1em}
+.hrow{fill:transparent} .hrow.un{fill:#f3dfb8}
+.hpr{stroke:#111;stroke-width:.8} .hpr.p1{fill:#d81f1a} .hpr.p2{fill:#e98400} .hpr.p3{fill:#f0cf00}
+.hrow.un+.hpr{animation:blink 1s steps(2,start) infinite}
+.hprt{font-size:10px;font-weight:700;fill:#111;font-family:"JetBrains Mono",monospace}
+.hcell{fill:#1d2125;font-size:11.5px} .hcell.b{font-family:"JetBrains Mono",monospace;font-weight:600}
+.hfp{position:absolute;left:1.6%;top:9%;width:min(280px,40%);background:#eceeef;border:1px solid #5f666d;border-radius:4px;box-shadow:0 10px 24px rgb(0 0 0 / .3);color:#1d2125;font-size:12px;z-index:2}
+.hfp-h{display:flex;justify-content:space-between;align-items:center;background:#3b4148;color:#f1f3f5;padding:5px 8px;font-family:"JetBrains Mono",monospace;font-size:12.5px}
+.hfp-h button{border:0;background:none;color:#f1f3f5;font-size:17px;line-height:1;cursor:pointer;padding:0 2px}
+.hfp-n{padding:6px 9px 0;font-weight:600}
+.hfp-s{margin:6px 9px;padding:4px 7px;background:#555c63;color:#fff;font-weight:700;font-size:11.5px;letter-spacing:.06em;border-radius:2px}
+.hfp-s span{font-weight:400;opacity:.8}
+.hfp dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0;padding:2px 9px 6px}
+.hfp dt{color:#4d545b} .hfp dd{margin:0;text-align:right;font-family:"JetBrains Mono",monospace;font-size:11.5px}
+.hfp-b{margin:2px 9px 9px;width:calc(100% - 18px);border:1px solid #5f666d;background:#f6f7f8;border-radius:3px;padding:5px;cursor:pointer;font-weight:600;font-size:12px;color:#1d2125}
+
+/* ---------- PLC (ladder en línea) ---------- */
+#plc{padding:14px 16px 20px}
+.plc-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 16px}
+.plc-head b{font-family:var(--f-disp);font-size:16px} .plc-head span{color:var(--muted);font-size:13px}
+.plc-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.plc-leg span{display:inline-flex;align-items:center;gap:6px}
+.lg{display:inline-block;width:20px;height:4px;border-radius:2px;background:var(--faint)}
+.lg.on{background:var(--plc-on)} .lg.tv{height:12px;width:14px;background:var(--plc-tv);border:1.5px solid var(--plc-on);border-radius:2px}
+.plc-note{margin:6px 0 10px;font-size:12.5px;color:var(--muted);max-width:80ch}
+.pou h3{margin:16px 0 4px;font-family:var(--f-disp);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.pou .snote{margin:0 0 8px;font-size:12.5px;color:var(--muted);max-width:90ch}
+.pou.sis h3{color:var(--alarm)}
+.pou.sis .rung{border-color:color-mix(in srgb,var(--alarm) 45%,var(--line))}
+.rung{display:block;width:100%;min-width:760px;height:auto;margin-bottom:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.rung .w{stroke:var(--faint);stroke-width:2} .rung .w.on{stroke:var(--plc-on);stroke-width:3.2}
+.rung .cg{fill:transparent} .rung .cg.tv{fill:var(--plc-tv)}
+.rung .cb{stroke:var(--fg);stroke-width:2.6} .rung .cb.on{stroke:var(--plc-on)}
+.rung .vn{fill:var(--fg);font-family:var(--f-mono);font-size:11px} .rung .vn.tv{fill:var(--plc-on);font-weight:600}
+.rung .vd{fill:var(--muted);font-size:10.5px;font-family:var(--f-body)}
+.rung .box{fill:var(--panel-2);stroke:var(--line-2);stroke-width:1.4} .rung .box.tv{stroke:var(--plc-on);stroke-width:2.2}
+.rung .bt{fill:var(--fg);font-family:var(--f-mono);font-size:10.5px;font-weight:600} .rung .bv{fill:var(--muted);font-family:var(--f-mono);font-size:10.5px}
+.rung .pbar{fill:var(--line)} .rung .pfill{fill:var(--plc-on)}
+.rung .coil{fill:none;stroke:var(--fg);stroke-width:2.6} .rung .coil.on{stroke:var(--plc-on)} .rung .coil.tv{fill:var(--plc-tv)}
+.rung .cl{fill:var(--fg);font-family:var(--f-mono);font-size:10px;font-weight:700}
+.rung .rail{fill:var(--muted)} .rung .rail.on{fill:var(--plc-on)}
+.rung .rt{fill:var(--fg);font-family:var(--f-disp);font-size:12.5px;font-weight:700} .rung .rc{fill:var(--muted);font-size:11.5px;font-family:var(--f-body)}
+/* ---------- P&ID ---------- */
+#pid{overflow:hidden;background:var(--desk)}
+.pidview{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;outline-offset:-2px}
+.pidview.drag{cursor:grabbing}
+.pidview svg{position:absolute;left:0;top:0;display:block;box-shadow:0 2px 18px rgba(0,0,0,.28);user-select:none;-webkit-user-select:none}
+.pidsvg .pq:hover>:not(text){stroke:#1b78b9}
+.pidsvg .pq:hover text{fill:#1b78b9}
+.pidsvg .pq.sel>:not(text){stroke:#d9480f;stroke-width:.55}
+.pidsvg .pq.sel text{fill:#d9480f}
+.pidbar{position:absolute;left:calc(12px + env(safe-area-inset-left,0px));top:12px;z-index:2;display:flex;gap:2px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 24px);padding:4px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(6px);box-shadow:var(--shadow)}
+.pidbar button,.pidbar a{border:0;background:transparent;border-radius:7px;padding:6px 10px;cursor:pointer;font:600 12px var(--f-body);color:var(--fg);text-decoration:none;white-space:nowrap}
+.pidbar #pidOut,.pidbar #pidIn{font:700 15px/1 var(--f-mono);padding:5px 10px}
+.pidbar button:hover,.pidbar a:hover{background:var(--panel-2)}
+.pidbar a{color:var(--accent)}
+.pidzoom{font:600 12px var(--f-mono);color:var(--muted);min-width:50px;text-align:center}
+.pidhint{position:absolute;right:12px;bottom:12px;z-index:2;font:500 11px var(--f-body);color:var(--muted);background:color-mix(in srgb,var(--panel) 88%,transparent);padding:5px 9px;border-radius:8px;border:1px solid var(--line);pointer-events:none}
+@media (max-width:600px){.pidhint{display:none}}
+@media (prefers-reduced-motion: reduce){ .hrow.un+.hpr{animation:none} }
 @media (max-width:600px){.lbl .v{display:none}}
 @media (max-width:980px){
   body{display:block}
@@ -161,7 +275,10 @@ footer b{color:var(--fg)}
   .topctl{justify-content:flex-start}
   h1{font-size:20px}
   .layout{display:block;min-height:0}
-  .view{height:62vh;min-height:380px;border-right:0;border-bottom:1px solid var(--line)}
+  .view{height:68vh;min-height:430px;border-right:0;border-bottom:1px solid var(--line)}
+  .vtabs{padding:6px 8px}
+  .vtabs .seg .vtab{padding:6px 9px;font-size:12px}
+  .vtab-note{display:none}
   .panel{overflow:visible;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   footer{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .viewbar{left:8px;right:8px;top:8px}
@@ -192,7 +309,14 @@ footer b{color:var(--fg)}
 </header>
 
 <main class="layout">
-  <section class="view" id="view" aria-label="Vista 3D del deshidratador">
+  <section class="view" id="view" aria-label="Vista del deshidratador">
+    <div class="vtabs">
+      <div class="seg" role="tablist" aria-label="Qué mirar">
+        <button class="vtab" role="tab" data-v="3d" aria-selected="true" aria-controls="stage">Planta 3D</button><button class="vtab" role="tab" data-v="hmi" aria-selected="false" aria-controls="hmi">Pantalla del operador</button><button class="vtab" role="tab" data-v="plc" aria-selected="false" aria-controls="plc">Lógica del PLC</button><button class="vtab" role="tab" data-v="pid" aria-selected="false" aria-controls="pid">P&amp;ID</button>
+      </div>
+      <span class="vtab-note" id="vnote">La planta como la ve quien la recorre</span>
+    </div>
+    <div class="stage" id="stage" data-v="3d">
     <div id="three"></div>
     <div class="viewbar">
       <div class="grp" id="cams">
@@ -203,17 +327,1240 @@ footer b{color:var(--fg)}
         <button data-cam="salidas">Salidas</button>
         <button data-cam="calentador">Calentador</button>
         <button data-cam="tanques">Tanques</button>
+        <button data-cam="control">Sala eléctrica</button>
       </div>
       <div class="grp">
         <button id="tFlow" title="Cañerías translúcidas con el fluido en movimiento">Ver flujos</button>
         <button id="tCut" title="Corte longitudinal del recipiente">Corte</button>
+        <button id="tZone" title="Área con posible atmósfera explosiva alrededor del skid">Área clasificada</button>
         <button id="tLbl" class="on" title="Mostrar etiquetas">Etiquetas</button>
       </div>
     </div>
     <div class="legend" id="legend"></div>
     <div class="hint">Clic en un equipo para ver su ficha · arrastrar para girar</div>
     <div class="cdnwarn" id="cdnwarn" hidden>No se pudo cargar el motor 3D desde el CDN. El simulador y el panel siguen funcionando; recargá la página con conexión para ver el modelo.</div>
+    <div class="pane" id="hmi" role="tabpanel" aria-label="Pantalla HMI del operador" hidden></div>
+    <div class="pane" id="plc" role="tabpanel" aria-label="Programa del PLC en ladder" hidden></div>
+    <div class="pane" id="pid" role="tabpanel" aria-label="P&amp;ID DES-PID-001 del módulo" hidden>
+      <div class="pidview" id="pidview" tabindex="0" aria-label="Plano P&amp;ID: arrastrá para mover, rueda o pellizco para acercar">
+<svg class="pidsvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 297" width="420mm" height="297mm" role="img" aria-label="P&amp;ID DES-PID-001 del deshidratador electrostático V-101"><style>svg.pidsvg{background:#fff}.pidsvg .paper{fill:#fff}.pidsvg text{font-family:Arial,"Liberation Sans","DejaVu Sans",Helvetica,sans-serif;fill:#111}.pidsvg .lt{fill:#222}.pidsvg .ph{fill:#666;font-style:italic}.pidsvg .fr{fill:none;stroke:#111;stroke-width:.6}.pidsvg .fr2{fill:none;stroke:#111;stroke-width:.3}.pidsvg .ln{fill:none;stroke:#111;stroke-width:.5;stroke-linejoin:round}.pidsvg .ln2{fill:none;stroke:#111;stroke-width:.3;stroke-linejoin:round}.pidsvg .br{fill:none;stroke:#111;stroke-width:.7}.pidsvg .eq{fill:#fff;stroke:#111;stroke-width:.3;stroke-linejoin:round}.pidsvg .eqt{fill:none;stroke:#111;stroke-width:.25}.pidsvg .vs{fill:#fff;stroke:#111;stroke-width:.6}.pidsvg .tl{stroke:#111;stroke-width:.2;stroke-dasharray:1.2 .8}.pidsvg .nz{fill:none;stroke:#111;stroke-width:.45}.pidsvg .fk{fill:#111;stroke:#111;stroke-width:.15}.pidsvg .op{fill:#fff;stroke:#111;stroke-width:.3}.pidsvg .bx{fill:#fff;stroke:#111;stroke-width:.25}.pidsvg .bxf{fill:none;stroke:#111;stroke-width:.3}.pidsvg .bxl{fill:none;stroke:#111;stroke-width:.18}.pidsvg .sg{fill:none;stroke:#111;stroke-width:.2;stroke-dasharray:1.3 .7}.pidsvg .sw{fill:none;stroke:#111;stroke-width:.2}.pidsvg .ld{stroke:#111;stroke-width:.2}.pidsvg .el{fill:none;stroke:#111;stroke-width:.4;stroke-dasharray:3 .8 .5 .8}.pidsvg .in{fill:none;stroke:#555;stroke-width:.25;stroke-dasharray:1.4 .7}.pidsvg .in2{fill:none;stroke:#555;stroke-width:.2}.pidsvg .gr{stroke:#111;stroke-width:.35}.pidsvg .grt{stroke:#111;stroke-width:.2}.pidsvg .lv{stroke:#111;stroke-width:.25}.pidsvg .lv2{stroke:#555;stroke-width:.18;stroke-dasharray:.8 .6}.pidsvg .pk{fill:none;stroke:#111;stroke-width:.25;stroke-dasharray:4 1 .6 1}.pidsvg .ul{stroke:#111;stroke-width:.25}.pidsvg .pq{cursor:pointer}</style><rect x="0" y="0" width="420" height="297" class="paper"/>
+<polyline class="ln" points="33,196 64.6,196"/>
+<polyline class="ln" points="33,208 46,208 46,196"/>
+<polyline class="ln" points="70,190.6 75.4,190.6 75.4,175 106,175"/>
+<line class="ld" x1="66.1" y1="181" x2="75.4" y2="181"/>
+<polyline class="sg" points="88.1,196 83.8,196"/>
+<polyline class="sg" points="88.1,185.4 81.2,185.4 81.2,193.4"/>
+<line class="ld" x1="83.5" y1="168.6" x2="83.5" y2="175"/>
+<polyline class="ln" points="93,175 93,156 33,156"/>
+<polyline class="ln2" points="124,207 127.6,207"/>
+<polyline class="ln2" points="131,203.6 131,192 101,192 101,176.2"/>
+<polyline class="sg" points="138.4,207 134.4,207"/>
+<polyline class="ln" points="135,58 135,168.5"/>
+<polyline class="ln" points="111,168.5 111,58"/>
+<polyline class="ln2" points="135,66 125,66 125,112 135,112"/>
+<line class="ld" x1="144" y1="175" x2="144" y2="161"/>
+<polyline class="sg" points="144,161 144,131.6"/>
+<polyline class="sg" points="144,124.4 144,89 141.8,89"/>
+<polyline class="sg" points="153,161.6 155.8,167.6"/>
+<polyline class="sg" points="163,161.6 160.2,167.6"/>
+<polyline class="sg" points="153,149.9 153,154.4"/>
+<polyline class="sg" points="163,149.9 163,154.4"/>
+<line class="ld" x1="171" y1="173" x2="171" y2="162"/>
+<polyline class="ln2" points="176,175 176,187 202,187 202,175"/>
+<polyline class="sg" points="174.6,158.4 185.4,158.4"/>
+<polyline class="sg" points="189,162 189,166.2"/>
+<polyline class="ln" points="140,175 230,175 230,160"/>
+<line class="ld" x1="224" y1="96.8" x2="222" y2="90.6"/>
+<polyline class="el" points="238,87 238,52"/>
+<polyline class="el" points="256,87 256,52"/>
+<polyline class="el" points="238,52 256,52"/>
+<line class="ld" x1="247" y1="96.8" x2="247" y2="82.6"/>
+<polyline class="sg" points="247,75.4 247,63.9"/>
+<polyline class="sg" points="243.1,60 239.6,60"/>
+<polyline class="sg" points="250.9,60 254.4,60"/>
+<polyline class="sg" points="233,89 229,89 229,77.6"/>
+<polyline class="sg" points="229,70.4 229,63.9"/>
+<polyline class="sg" points="232.9,60 236.4,60"/>
+<polyline class="sg" points="261,89 264.5,89 264.5,77.6"/>
+<polyline class="sg" points="264.5,70.4 264.5,63.9"/>
+<polyline class="sg" points="260.6,60 257.6,60"/>
+<polyline class="ln" points="272,97.8 272,85"/>
+<polyline class="ln2" points="275.4,81.6 277.4,81.6 277.4,56"/>
+<line class="ld" x1="284" y1="96.8" x2="284" y2="90.2"/>
+<polyline class="sg" points="284,83 284,79.3"/>
+<line class="ld" x1="295" y1="96.8" x2="295" y2="90.2"/>
+<polyline class="ln" points="306,100 306,64 390,64"/>
+<line class="ld" x1="314" y1="62" x2="314" y2="58.6"/>
+<line class="ld" x1="323" y1="64" x2="323" y2="71.4"/>
+<polyline class="sg" points="326.6,75 334.5,75 334.5,77.8"/>
+<polyline class="sg" points="323,78.6 323,88.1"/>
+<polyline class="ln2" points="335,64 335,73 361,73 361,64"/>
+<polyline class="sg" points="348,51.6 348,57.2"/>
+<polyline class="sg" points="295,83 295,48 344.4,48"/>
+<polyline class="ln" points="365,64 365,84 390,84"/>
+<polyline class="sg" points="377,54.5 377,57.2"/>
+<polyline class="sg" points="377,93.5 377,90.8"/>
+<polyline class="ln" points="321.63,109.17 336,109.17"/>
+<polyline class="ln" points="320.11,154.17 336,154.17"/>
+<polyline class="ln2" points="336,158.17 336,165.17"/>
+<line class="ld" x1="336" y1="103.17" x2="347" y2="103.17"/>
+<polyline class="sg" points="350.6,106.77 350.6,142.4"/>
+<polyline class="sg" points="350.6,163.4 358.7,163.4"/>
+<polyline class="ln2" points="207.25,112.5 197,112.5"/>
+<polyline class="sg" points="193.4,108.9 193.4,105.4"/>
+<polyline class="ln2" points="209.06,152.5 195.6,152.5"/>
+<polyline class="ln2" points="207.02,146.67 195.6,146.67"/>
+<polyline class="ln2" points="205.81,140.83 195.6,140.83"/>
+<polyline class="ln2" points="205.17,135 195.6,135"/>
+<polyline class="ln2" points="205,129.17 195.6,129.17"/>
+<polyline class="ln2" points="242,160 242,202"/>
+<polyline class="ln2" points="254,160 254,202"/>
+<polyline class="ln2" points="254,202 212,202 212,210"/>
+<polyline class="ln2" points="270,160 270,210"/>
+<polyline class="ln" points="294,160 294,196 390,196"/>
+<polyline class="ln2" points="300,196 300,206 328,206 328,196"/>
+<polyline class="sg" points="350.6,149.6 350.6,176 314,176 314,189.2"/>
+<line class="ld" x1="336" y1="194" x2="336" y2="188.4"/>
+<line class="ld" x1="346" y1="196" x2="346" y2="188.4"/>
+<polyline class="sg" points="45,69.6 45,86.1"/>
+<line class="sw" x1="38" y1="117" x2="42" y2="117"/>
+<line class="sg" x1="57" y1="117" x2="61" y2="117"/>
+<polyline class="sg" points="49.5,121 49.5,123.5 86.5,123.5 86.5,121"/>
+<line class="sg" x1="49.5" y1="126" x2="49.5" y2="133"/>
+<line class="sg" x1="68.5" y1="126" x2="68.5" y2="133"/>
+<polyline class="el" points="86.5,126 86.5,136.5"/>
+<line class="sg" x1="49.5" y1="140" x2="49.5" y2="141.4"/>
+<line class="sg" x1="68.5" y1="140" x2="68.5" y2="141.4"/>
+<line class="ln" x1="123.4" y1="233.2" x2="130.6" y2="233.2"/>
+<line class="ln" x1="156.9" y1="233.2" x2="164.1" y2="233.2"/>
+<line class="ln" x1="190.4" y1="233.2" x2="197.6" y2="233.2"/>
+<line class="ln" x1="123.4" y1="238.75" x2="130.6" y2="238.75"/>
+<line class="ln" x1="156.9" y1="240.65" x2="164.1" y2="240.65"/>
+<line class="ln" x1="190.4" y1="240.65" x2="197.6" y2="240.65"/>
+<line class="ln" x1="156.9" y1="249.85" x2="164.1" y2="249.85"/>
+<line class="ln" x1="123.4" y1="255.4" x2="130.6" y2="255.4"/>
+<line class="ln2" x1="156.9" y1="255.4" x2="164.1" y2="255.4"/>
+<line class="sg" x1="190.4" y1="255.4" x2="197.6" y2="255.4"/>
+<line class="el" x1="123.4" y1="260.95" x2="130.6" y2="260.95"/>
+<line class="sw" x1="156.9" y1="260.95" x2="164.1" y2="260.95"/>
+<rect class="fr" x="10" y="10" width="400" height="277"/>
+<rect class="fr2" x="15" y="15" width="390" height="267"/>
+<text class="tx" x="39.38" y="13.6" font-size="2" text-anchor="middle">1</text>
+<text class="tx" x="39.38" y="285.6" font-size="2" text-anchor="middle">1</text>
+<line class="fr2" x1="63.75" y1="10" x2="63.75" y2="15"/>
+<line class="fr2" x1="63.75" y1="282" x2="63.75" y2="287"/>
+<text class="tx" x="88.12" y="13.6" font-size="2" text-anchor="middle">2</text>
+<text class="tx" x="88.12" y="285.6" font-size="2" text-anchor="middle">2</text>
+<line class="fr2" x1="112.5" y1="10" x2="112.5" y2="15"/>
+<line class="fr2" x1="112.5" y1="282" x2="112.5" y2="287"/>
+<text class="tx" x="136.88" y="13.6" font-size="2" text-anchor="middle">3</text>
+<text class="tx" x="136.88" y="285.6" font-size="2" text-anchor="middle">3</text>
+<line class="fr2" x1="161.25" y1="10" x2="161.25" y2="15"/>
+<line class="fr2" x1="161.25" y1="282" x2="161.25" y2="287"/>
+<text class="tx" x="185.62" y="13.6" font-size="2" text-anchor="middle">4</text>
+<text class="tx" x="185.62" y="285.6" font-size="2" text-anchor="middle">4</text>
+<line class="fr2" x1="210" y1="10" x2="210" y2="15"/>
+<line class="fr2" x1="210" y1="282" x2="210" y2="287"/>
+<text class="tx" x="234.38" y="13.6" font-size="2" text-anchor="middle">5</text>
+<text class="tx" x="234.38" y="285.6" font-size="2" text-anchor="middle">5</text>
+<line class="fr2" x1="258.75" y1="10" x2="258.75" y2="15"/>
+<line class="fr2" x1="258.75" y1="282" x2="258.75" y2="287"/>
+<text class="tx" x="283.12" y="13.6" font-size="2" text-anchor="middle">6</text>
+<text class="tx" x="283.12" y="285.6" font-size="2" text-anchor="middle">6</text>
+<line class="fr2" x1="307.5" y1="10" x2="307.5" y2="15"/>
+<line class="fr2" x1="307.5" y1="282" x2="307.5" y2="287"/>
+<text class="tx" x="331.88" y="13.6" font-size="2" text-anchor="middle">7</text>
+<text class="tx" x="331.88" y="285.6" font-size="2" text-anchor="middle">7</text>
+<line class="fr2" x1="356.25" y1="10" x2="356.25" y2="15"/>
+<line class="fr2" x1="356.25" y1="282" x2="356.25" y2="287"/>
+<text class="tx" x="380.62" y="13.6" font-size="2" text-anchor="middle">8</text>
+<text class="tx" x="380.62" y="285.6" font-size="2" text-anchor="middle">8</text>
+<text class="tx" x="12.5" y="37.95" font-size="2" text-anchor="middle">A</text>
+<text class="tx" x="407.5" y="37.95" font-size="2" text-anchor="middle">A</text>
+<line class="fr2" x1="10" y1="59.5" x2="15" y2="59.5"/>
+<line class="fr2" x1="405" y1="59.5" x2="410" y2="59.5"/>
+<text class="tx" x="12.5" y="82.45" font-size="2" text-anchor="middle">B</text>
+<text class="tx" x="407.5" y="82.45" font-size="2" text-anchor="middle">B</text>
+<line class="fr2" x1="10" y1="104" x2="15" y2="104"/>
+<line class="fr2" x1="405" y1="104" x2="410" y2="104"/>
+<text class="tx" x="12.5" y="126.95" font-size="2" text-anchor="middle">C</text>
+<text class="tx" x="407.5" y="126.95" font-size="2" text-anchor="middle">C</text>
+<line class="fr2" x1="10" y1="148.5" x2="15" y2="148.5"/>
+<line class="fr2" x1="405" y1="148.5" x2="410" y2="148.5"/>
+<text class="tx" x="12.5" y="171.45" font-size="2" text-anchor="middle">D</text>
+<text class="tx" x="407.5" y="171.45" font-size="2" text-anchor="middle">D</text>
+<line class="fr2" x1="10" y1="193" x2="15" y2="193"/>
+<line class="fr2" x1="405" y1="193" x2="410" y2="193"/>
+<text class="tx" x="12.5" y="215.95" font-size="2" text-anchor="middle">E</text>
+<text class="tx" x="407.5" y="215.95" font-size="2" text-anchor="middle">E</text>
+<line class="fr2" x1="10" y1="237.5" x2="15" y2="237.5"/>
+<line class="fr2" x1="405" y1="237.5" x2="410" y2="237.5"/>
+<text class="tx" x="12.5" y="260.45" font-size="2" text-anchor="middle">F</text>
+<text class="tx" x="407.5" y="260.45" font-size="2" text-anchor="middle">F</text>
+<g class="pq" data-tag="P-101">
+<text class="tx" x="18" y="21" font-size="2.2" font-weight="bold">P-101</text>
+<line class="ul" x1="18" y1="21.7" x2="24.9" y2="21.7"/>
+<text class="tx" x="18" y="24.6" font-size="1.6" font-weight="bold">BOMBA DE ALIMENTACIÓN</text>
+<text class="tx" x="18" y="27.3" font-size="1.4">CENTRÍFUGA HORIZONTAL OH2</text>
+<text class="tx" x="18" y="29.3" font-size="1.4">133 m³/h @ 75 m (NOMINAL)</text>
+<text class="tx" x="18" y="31.3" font-size="1.4">MOTOR 45 kW · 400 V · ARR. SUAVE</text>
+<text class="tx" x="18" y="33.3" font-size="1.4">Ex d IIB T3</text>
+</g>
+<g class="pq" data-tag="P-201">
+<text class="tx" x="66" y="21" font-size="2.2" font-weight="bold">TK-201 / P-201</text>
+<line class="ul" x1="66" y1="21.7" x2="85.32" y2="21.7"/>
+<text class="tx" x="66" y="24.6" font-size="1.6" font-weight="bold">DOSIFICACIÓN DE DEMULSIFICANTE</text>
+<text class="tx" x="66" y="27.3" font-size="1.4">TK-201: CONTENEDOR IBC 1 m³</text>
+<text class="tx" x="66" y="29.3" font-size="1.4">P-201: DOSIFICADORA A DIAFRAGMA</text>
+<text class="tx" x="66" y="31.3" font-size="1.4">0–10 L/h · 0,37 kW · VARIADOR</text>
+<text class="tx" x="66" y="33.3" font-size="1.4">DOSIS 25 ppm (PROPORCIONAL)</text>
+</g>
+<g class="pq" data-tag="E-101">
+<text class="tx" x="114" y="21" font-size="2.2" font-weight="bold">E-101</text>
+<line class="ul" x1="114" y1="21.7" x2="120.9" y2="21.7"/>
+<text class="tx" x="114" y="24.6" font-size="1.6" font-weight="bold">CALENTADOR DE CRUDO</text>
+<text class="tx" x="114" y="27.3" font-size="1.4">CASCO Y TUBOS · ACEITE TÉRMICO</text>
+<text class="tx" x="114" y="29.3" font-size="1.4">SERVICIO 3,1 MW (DISEÑO)</text>
+<text class="tx" x="114" y="31.3" font-size="1.4">TUBOS: CRUDO 35 → 70 °C</text>
+<text class="tx" x="114" y="33.3" font-size="1.4">DISEÑO: 10 bar g / 200 °C</text>
+</g>
+<g class="pq" data-tag="V-101">
+<text class="tx" x="162" y="21" font-size="2.2" font-weight="bold">V-101</text>
+<line class="ul" x1="162" y1="21.7" x2="168.9" y2="21.7"/>
+<text class="tx" x="162" y="24.6" font-size="1.6" font-weight="bold">DESHIDRATADOR ELECTROSTÁTICO</text>
+<text class="tx" x="162" y="27.3" font-size="1.4">HORIZONTAL · Ø 3600 × 12000 T/T</text>
+<text class="tx" x="162" y="29.3" font-size="1.4">CABEZALES ELIPSOIDALES 2:1</text>
+<text class="tx" x="162" y="31.3" font-size="1.4">DISEÑO: 10 bar g / 120 °C</text>
+<text class="tx" x="162" y="33.3" font-size="1.4">OPERACIÓN: 5,5 bar g / 70 °C</text>
+<text class="tx" x="162" y="35.3" font-size="1.4">SA-516-70 · C.A. 3 mm · ASME VIII-1</text>
+<text class="tx" x="162" y="37.3" font-size="1.4">CAPACIDAD 3200 m³/d DE EMULSIÓN</text>
+</g>
+<g class="pq" data-tag="TR">
+<text class="tx" x="214" y="21" font-size="2.2" font-weight="bold">TR-101A / TR-101B</text>
+<line class="ul" x1="214" y1="21.7" x2="237.46" y2="21.7"/>
+<text class="tx" x="214" y="24.6" font-size="1.6" font-weight="bold">TRANSFORMADORES DE REJILLA</text>
+<text class="tx" x="214" y="27.3" font-size="1.4">2 × 50 kVA · 400 V / 20 kV</text>
+<text class="tx" x="214" y="29.3" font-size="1.4">REACTOR SERIE 100 % · ONAN</text>
+<text class="tx" x="214" y="31.3" font-size="1.4">MONTADOS SOBRE V-101 · APTO ZONA 2</text>
+<text class="tx" x="214" y="33.3" font-size="1.4">DISPARO &gt; 2,5 A DURANTE 5 s</text>
+</g>
+<g class="pq" data-tag="PSV-101">
+<text class="tx" x="266" y="21" font-size="2.2" font-weight="bold">PSV-101</text>
+<line class="ul" x1="266" y1="21.7" x2="275.66" y2="21.7"/>
+<text class="tx" x="266" y="24.6" font-size="1.6" font-weight="bold">VÁLVULA DE SEGURIDAD</text>
+<text class="tx" x="266" y="27.3" font-size="1.4">3" J 4" · TARADA 10 bar g</text>
+<text class="tx" x="266" y="29.3" font-size="1.4">CASO DIMENSIONANTE: FUEGO</text>
+<text class="tx" x="266" y="31.3" font-size="1.4">DESCARGA A ANTORCHA</text>
+<text class="tx" x="266" y="33.3" font-size="1.4">BLOQUEO LO AGUAS ARRIBA</text>
+</g>
+<g class="pq" data-tag="UCP-101">
+<text class="tx" x="312" y="21" font-size="2.2" font-weight="bold">UCP-101 / SIS-101</text>
+<line class="ul" x1="312" y1="21.7" x2="335.46" y2="21.7"/>
+<text class="tx" x="312" y="24.6" font-size="1.6" font-weight="bold">SISTEMA DE CONTROL Y SEGURIDAD</text>
+<text class="tx" x="312" y="27.3" font-size="1.4">UCP-101: PLC DE CONTROL + HMI</text>
+<text class="tx" x="312" y="29.3" font-size="1.4">SIS-101: PLC DE SEGURIDAD SIL 2</text>
+<text class="tx" x="312" y="31.3" font-size="1.4">AMBOS EN SALA ELÉCTRICA SE-101</text>
+<text class="tx" x="312" y="33.3" font-size="1.4">FUERA DEL ÁREA CLASIFICADA</text>
+</g>
+<g class="pq" data-tag="EP-101">
+<text class="tx" x="360" y="21" font-size="2.2" font-weight="bold">EP-101</text>
+<line class="ul" x1="360" y1="21.7" x2="368.28" y2="21.7"/>
+<text class="tx" x="360" y="24.6" font-size="1.6" font-weight="bold">ESTACIÓN LOCAL DE CONTROL</text>
+<text class="tx" x="360" y="27.3" font-size="1.4">SELECTOR LOCAL / REMOTO</text>
+<text class="tx" x="360" y="29.3" font-size="1.4">PULSADOR DE EMERGENCIA (ESD)</text>
+<text class="tx" x="360" y="31.3" font-size="1.4">ARRANQUE · PARADA · LAVADO</text>
+<text class="tx" x="360" y="33.3" font-size="1.4">Ex e / Ex d · AL PIE DEL SKID</text>
+</g>
+<g class="pq" data-tag="V-101">
+<path class="vs" d="M 217 100 L 313 100 A 12 30 0 0 1 313 160 L 217 160 A 12 30 0 0 1 217 100 Z"/>
+<line class="tl" x1="217" y1="100" x2="217" y2="160"/>
+<line class="tl" x1="313" y1="100" x2="313" y2="160"/>
+</g>
+<g class="pq" data-tag="GRID">
+<line class="gr" x1="226" y1="121.67" x2="304" y2="121.67"/>
+<line class="grt" x1="228" y1="120.77" x2="228" y2="122.57"/>
+<line class="grt" x1="232" y1="120.77" x2="232" y2="122.57"/>
+<line class="grt" x1="236" y1="120.77" x2="236" y2="122.57"/>
+<line class="grt" x1="240" y1="120.77" x2="240" y2="122.57"/>
+<line class="grt" x1="244" y1="120.77" x2="244" y2="122.57"/>
+<line class="grt" x1="248" y1="120.77" x2="248" y2="122.57"/>
+<line class="grt" x1="252" y1="120.77" x2="252" y2="122.57"/>
+<line class="grt" x1="256" y1="120.77" x2="256" y2="122.57"/>
+<line class="grt" x1="260" y1="120.77" x2="260" y2="122.57"/>
+<line class="grt" x1="264" y1="120.77" x2="264" y2="122.57"/>
+<line class="grt" x1="268" y1="120.77" x2="268" y2="122.57"/>
+<line class="grt" x1="272" y1="120.77" x2="272" y2="122.57"/>
+<line class="grt" x1="276" y1="120.77" x2="276" y2="122.57"/>
+<line class="grt" x1="280" y1="120.77" x2="280" y2="122.57"/>
+<line class="grt" x1="284" y1="120.77" x2="284" y2="122.57"/>
+<line class="grt" x1="288" y1="120.77" x2="288" y2="122.57"/>
+<line class="grt" x1="292" y1="120.77" x2="292" y2="122.57"/>
+<line class="grt" x1="296" y1="120.77" x2="296" y2="122.57"/>
+<line class="grt" x1="300" y1="120.77" x2="300" y2="122.57"/>
+<line class="gr" x1="226" y1="116.33" x2="304" y2="116.33"/>
+<line class="grt" x1="228" y1="115.43" x2="228" y2="117.23"/>
+<line class="grt" x1="232" y1="115.43" x2="232" y2="117.23"/>
+<line class="grt" x1="236" y1="115.43" x2="236" y2="117.23"/>
+<line class="grt" x1="240" y1="115.43" x2="240" y2="117.23"/>
+<line class="grt" x1="244" y1="115.43" x2="244" y2="117.23"/>
+<line class="grt" x1="248" y1="115.43" x2="248" y2="117.23"/>
+<line class="grt" x1="252" y1="115.43" x2="252" y2="117.23"/>
+<line class="grt" x1="256" y1="115.43" x2="256" y2="117.23"/>
+<line class="grt" x1="260" y1="115.43" x2="260" y2="117.23"/>
+<line class="grt" x1="264" y1="115.43" x2="264" y2="117.23"/>
+<line class="grt" x1="268" y1="115.43" x2="268" y2="117.23"/>
+<line class="grt" x1="272" y1="115.43" x2="272" y2="117.23"/>
+<line class="grt" x1="276" y1="115.43" x2="276" y2="117.23"/>
+<line class="grt" x1="280" y1="115.43" x2="280" y2="117.23"/>
+<line class="grt" x1="284" y1="115.43" x2="284" y2="117.23"/>
+<line class="grt" x1="288" y1="115.43" x2="288" y2="117.23"/>
+<line class="grt" x1="292" y1="115.43" x2="292" y2="117.23"/>
+<line class="grt" x1="296" y1="115.43" x2="296" y2="117.23"/>
+<line class="grt" x1="300" y1="115.43" x2="300" y2="117.23"/>
+</g>
+<text class="tx" x="265" y="114.93" font-size="1.3" text-anchor="middle">REJILLAS DE ALTA TENSIÓN (2 SECCIONES)</text>
+<line class="in" x1="226" y1="135" x2="290" y2="135"/>
+<line class="in2" x1="230" y1="135" x2="230" y2="133.6"/>
+<polygon class="fk" points="230,132.8 230.36,134 229.64,134"/>
+<line class="in2" x1="238" y1="135" x2="238" y2="133.6"/>
+<polygon class="fk" points="238,132.8 238.36,134 237.64,134"/>
+<line class="in2" x1="246" y1="135" x2="246" y2="133.6"/>
+<polygon class="fk" points="246,132.8 246.36,134 245.64,134"/>
+<line class="in2" x1="254" y1="135" x2="254" y2="133.6"/>
+<polygon class="fk" points="254,132.8 254.36,134 253.64,134"/>
+<line class="in2" x1="262" y1="135" x2="262" y2="133.6"/>
+<polygon class="fk" points="262,132.8 262.36,134 261.64,134"/>
+<line class="in2" x1="270" y1="135" x2="270" y2="133.6"/>
+<polygon class="fk" points="270,132.8 270.36,134 269.64,134"/>
+<line class="in2" x1="278" y1="135" x2="278" y2="133.6"/>
+<polygon class="fk" points="278,132.8 278.36,134 277.64,134"/>
+<line class="in2" x1="286" y1="135" x2="286" y2="133.6"/>
+<polygon class="fk" points="286,132.8 286.36,134 285.64,134"/>
+<text class="tx" x="268" y="137.6" font-size="1.25" text-anchor="middle">DISTRIBUIDOR DE ENTRADA</text>
+<polyline class="in" points="230,160 230,135"/>
+<line class="in" x1="230" y1="104.17" x2="306" y2="104.17"/>
+<line class="in2" x1="234" y1="104.17" x2="234" y2="105.37"/>
+<line class="in2" x1="242" y1="104.17" x2="242" y2="105.37"/>
+<line class="in2" x1="250" y1="104.17" x2="250" y2="105.37"/>
+<line class="in2" x1="258" y1="104.17" x2="258" y2="105.37"/>
+<line class="in2" x1="266" y1="104.17" x2="266" y2="105.37"/>
+<line class="in2" x1="274" y1="104.17" x2="274" y2="105.37"/>
+<line class="in2" x1="282" y1="104.17" x2="282" y2="105.37"/>
+<line class="in2" x1="290" y1="104.17" x2="290" y2="105.37"/>
+<line class="in2" x1="298" y1="104.17" x2="298" y2="105.37"/>
+<text class="tx" x="277" y="107.17" font-size="1.25" text-anchor="middle">COLECTOR DE CRUDO TRATADO</text>
+<line class="in" x1="226" y1="157.4" x2="304" y2="157.4"/>
+<polyline class="in2" points="230,157.4 231.3,156.1"/>
+<polyline class="in2" points="237,157.4 238.3,156.1"/>
+<polyline class="in2" points="244,157.4 245.3,156.1"/>
+<polyline class="in2" points="251,157.4 252.3,156.1"/>
+<polyline class="in2" points="258,157.4 259.3,156.1"/>
+<polyline class="in2" points="265,157.4 266.3,156.1"/>
+<polyline class="in2" points="272,157.4 273.3,156.1"/>
+<polyline class="in2" points="279,157.4 280.3,156.1"/>
+<polyline class="in2" points="286,157.4 287.3,156.1"/>
+<polyline class="in2" points="293,157.4 294.3,156.1"/>
+<polyline class="in2" points="300,157.4 301.3,156.1"/>
+<polyline class="in" points="270,160 270,157.4"/>
+<text class="tx" x="293" y="156" font-size="1.2" text-anchor="middle">COLECTOR DE LAVADO DE BARROS</text>
+<line class="in" x1="224" y1="100" x2="224" y2="150.83"/>
+<text class="ph" x="226" y="109.67" font-size="1.3">CRUDO TRATADO</text>
+<text class="ph" x="247" y="127.17" font-size="1.3">EMULSIÓN · ZONA DE COALESCENCIA</text>
+<text class="ph" x="247" y="150.83" font-size="1.3">AGUA SEPARADA</text>
+<line class="lv2" x1="292" y1="129.17" x2="312" y2="129.17"/>
+<text class="tx" x="311.5" y="128.67" font-size="1.15" text-anchor="end">LAHH 1850</text>
+<line class="lv2" x1="292" y1="135" x2="312" y2="135"/>
+<text class="tx" x="311.5" y="134.5" font-size="1.15" text-anchor="end">LAH 1500</text>
+<line class="lv" x1="292" y1="141.67" x2="312" y2="141.67"/>
+<text class="tx" x="311.5" y="141.17" font-size="1.15" text-anchor="end">NIL 1100</text>
+<line class="lv2" x1="292" y1="148.33" x2="312" y2="148.33"/>
+<text class="tx" x="311.5" y="147.83" font-size="1.15" text-anchor="end">LAL 700</text>
+<polygon class="fk" points="301,140.27 303,140.27 302,141.67"/>
+<text class="tx" x="282" y="168" font-size="2.4" text-anchor="middle" font-weight="bold">V-101</text>
+<text class="tx" x="282" y="170.6" font-size="1.3" text-anchor="middle">DESHIDRATADOR</text>
+<text class="tx" x="282" y="172.5" font-size="1.3" text-anchor="middle">ELECTROSTÁTICO</text>
+<g class="pq" data-tag="P-101">
+<polygon class="op" points="17,193.4 30.6,193.4 33,196 30.6,198.6 17,198.6"/>
+<text class="tx" x="23.8" y="196.55" font-size="1.4" text-anchor="middle" font-weight="bold">V-001</text>
+<text class="tx" x="17" y="190.65" font-size="1.3">DESDE FWKO V-001</text>
+<text class="tx" x="17" y="192.4" font-size="1.3">EMULSIÓN · 35 °C · 3,5 bar g</text>
+</g>
+<text class="lt" x="40.5" y="194.7" font-size="1.35" text-anchor="middle">8"-P-1001-A3</text>
+<g transform="translate(50 196) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<polyline class="eq" points="53.6,196 56.2,199 57.8,197.6"/>
+<line class="eq" x1="55.2" y1="199.9" x2="57.4" y2="198"/>
+<text class="tx" x="56" y="202.6" font-size="1.25" text-anchor="middle">Y-101</text>
+<g class="pq" data-tag="TK-302">
+<polygon class="op" points="17,205.4 30.6,205.4 33,208 30.6,210.6 17,210.6"/>
+<text class="tx" x="23.8" y="208.55" font-size="1.4" text-anchor="middle" font-weight="bold">P-302</text>
+<text class="tx" x="17" y="204.4" font-size="1.3">DESDE TK-302 (RECUPERACIÓN)</text>
+</g>
+<g transform="translate(39.5 208) rotate(0)">
+<polygon class="fk" points="-2.4,-1.49 -2.4,1.49 0,0"/>
+<polygon class="eq" points="2.4,-1.49 2.4,1.49 0,0"/>
+<line class="eqt" x1="0" y1="-2.09" x2="0" y2="2.09"/>
+</g>
+<text class="lt" x="39.5" y="212.4" font-size="1.35" text-anchor="middle">3"-P-1014-A3</text>
+<g class="pq" data-tag="P-101">
+<circle class="eq" cx="70" cy="196" r="5.4"/>
+<polyline class="eq" points="66,199.6 63.8,203.2 76.2,203.2 74,199.6"/>
+<line class="eq" x1="75.4" y1="196" x2="78.6" y2="196"/>
+<circle class="eq" cx="81.2" cy="196" r="2.6"/>
+<text class="tx" x="81.2" y="196.65" font-size="1.8" text-anchor="middle" font-weight="bold">M</text>
+</g>
+<text class="tx" x="70" y="206.6" font-size="2" text-anchor="middle" font-weight="bold">P-101</text>
+<polygon class="fk" points="75.4,185 76.3,188 74.5,188"/>
+<g class="pq" data-tag="P-101">
+<circle class="bx" cx="62.5" cy="181" r="3.6"/>
+<text class="tx" x="62.5" y="180.55" font-size="1.55" text-anchor="middle" font-weight="bold">AT</text>
+<text class="tx" x="62.5" y="182.95" font-size="1.35" text-anchor="middle">100</text>
+</g>
+<text class="tx" x="57.9" y="180.55" font-size="1.3" text-anchor="end">% AGUA</text>
+<text class="tx" x="57.9" y="182.45" font-size="1.3" text-anchor="end">AAH 20 %</text>
+<g class="pq" data-tag="SIS-101">
+<polygon class="bx" points="92,192.1 95.9,196 92,199.9 88.1,196"/>
+<text class="tx" x="92" y="195.75" font-size="1.25" text-anchor="middle" font-weight="bold">SIF</text>
+<text class="tx" x="92" y="197.6" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="92,181.5 95.9,185.4 92,189.3 88.1,185.4"/>
+<text class="tx" x="92" y="185.15" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="92" y="187" font-size="1.3" text-anchor="middle" font-weight="bold">1</text>
+</g>
+<g transform="translate(80 175) rotate(0)">
+<polygon class="fk" points="-2.4,-1.49 -2.4,1.49 0,0"/>
+<polygon class="eq" points="2.4,-1.49 2.4,1.49 0,0"/>
+<line class="eqt" x1="0" y1="-2.09" x2="0" y2="2.09"/>
+</g>
+<g transform="translate(87 175) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g class="pq" data-tag="P-101">
+<circle class="bx" cx="83.5" cy="165" r="3.6"/>
+<text class="tx" x="83.5" y="164.55" font-size="1.55" text-anchor="middle" font-weight="bold">PI</text>
+<text class="tx" x="83.5" y="166.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<g transform="translate(60 156) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<line class="eq" x1="70.5" y1="154.2" x2="70.5" y2="157.8"/>
+<line class="eq" x1="71.5" y1="154.2" x2="71.5" y2="157.8"/>
+<text class="tx" x="71" y="152.7" font-size="1.25" text-anchor="middle" font-weight="bold">RO-101</text>
+<g class="pq" data-tag="P-101">
+<polygon class="op" points="33,153.4 19.4,153.4 17,156 19.4,158.6 33,158.6"/>
+<text class="tx" x="26.2" y="156.55" font-size="1.4" text-anchor="middle" font-weight="bold">V-001</text>
+<text class="tx" x="17" y="150.65" font-size="1.3">A FWKO V-001</text>
+<text class="tx" x="17" y="152.4" font-size="1.3">FLUJO MÍNIMO DE P-101</text>
+</g>
+<text class="lt" x="49" y="154.7" font-size="1.35" text-anchor="middle">2"-P-1015-A3</text>
+<polygon class="fk" points="40.5,156 43.5,155.1 43.5,156.9"/>
+<polygon class="fk" points="93,163.5 93.9,166.5 92.1,166.5"/>
+<text class="lt" x="99.5" y="173.7" font-size="1.35" text-anchor="middle">6"-P-1002-A3</text>
+<g class="pq" data-tag="P-201">
+<rect class="eq" x="112" y="197" width="12" height="15" rx="0.8"/>
+<line class="eqt" x1="112" y1="200" x2="124" y2="200"/>
+</g>
+<text class="tx" x="118" y="205.6" font-size="1.45" text-anchor="middle" font-weight="bold">TK-201</text>
+<text class="tx" x="118" y="207.8" font-size="1.15" text-anchor="middle">IBC 1 m³</text>
+<g class="pq" data-tag="P-201">
+<circle class="eq" cx="131" cy="207" r="3.4"/>
+<line class="eqt" x1="131" y1="204.2" x2="131" y2="209.8"/>
+<line class="eqt" x1="129.2" y1="205.4" x2="129.2" y2="208.6"/>
+</g>
+<text class="tx" x="131" y="213.4" font-size="1.7" text-anchor="middle" font-weight="bold">P-201</text>
+<g transform="translate(117 192) rotate(180)">
+<polygon class="fk" points="-2.4,-1.49 -2.4,1.49 0,0"/>
+<polygon class="eq" points="2.4,-1.49 2.4,1.49 0,0"/>
+<line class="eqt" x1="0" y1="-2.09" x2="0" y2="2.09"/>
+</g>
+<g transform="translate(108.5 192) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<circle class="fk" cx="101" cy="175" r="0.75"/>
+<text class="lt" x="99.4" y="183.6" font-size="1.35" text-anchor="middle" transform="rotate(-90 99.4 183.6)">½"-CI-1010-S1</text>
+<g class="pq" data-tag="P-201">
+<rect class="bx" x="138.4" y="203.4" width="7.2" height="7.2"/>
+<circle class="bx" cx="142" cy="207" r="3.6"/>
+<line class="bxl" x1="138.4" y1="207" x2="145.6" y2="207"/>
+<text class="tx" x="142" y="206.55" font-size="1.55" text-anchor="middle" font-weight="bold">FY</text>
+<text class="tx" x="142" y="208.95" font-size="1.35" text-anchor="middle">201</text>
+</g>
+<text class="tx" x="146.6" y="206.55" font-size="1.3">× FT-101</text>
+<text class="tx" x="146.6" y="208.45" font-size="1.3">25 ppm</text>
+<g class="pq" data-tag="E-101">
+<rect class="eq" x="106" y="168.5" width="34" height="13" rx="6.5"/>
+<line class="eqt" x1="111" y1="168.5" x2="111" y2="181.5"/>
+<line class="eqt" x1="135" y1="168.5" x2="135" y2="181.5"/>
+<polyline class="eqt" points="106,175 111,175 113.5,172.2 117.5,177.8 121.5,172.2 125.5,177.8 129.5,172.2 133.5,177.8 135,175 140,175"/>
+</g>
+<text class="tx" x="123" y="185.4" font-size="2" text-anchor="middle" font-weight="bold">E-101</text>
+<text class="tx" x="123" y="187.7" font-size="1.25" text-anchor="middle">CALENTADOR</text>
+<g class="pq" data-tag="E-101">
+<polygon class="op" points="132.4,46 132.4,55.6 135,58 137.6,55.6 137.6,46"/>
+<text class="tx" x="135.5" y="50.8" font-size="1.35" text-anchor="middle" font-weight="bold" transform="rotate(-90 135.5 50.8)">S.A.T.</text>
+<text class="tx" x="138.8" y="51.63" font-size="1.3">DESDE SISTEMA DE</text>
+<text class="tx" x="138.8" y="53.38" font-size="1.3">ACEITE TÉRMICO 180 °C</text>
+</g>
+<g class="pq" data-tag="E-101">
+<polygon class="op" points="108.4,58 108.4,48.4 111,46 113.6,48.4 113.6,58"/>
+<text class="tx" x="111.5" y="53.2" font-size="1.35" text-anchor="middle" font-weight="bold" transform="rotate(-90 111.5 53.2)">S.A.T.</text>
+<text class="tx" x="107.2" y="51.63" font-size="1.3" text-anchor="end">A SISTEMA DE</text>
+<text class="tx" x="107.2" y="53.38" font-size="1.3" text-anchor="end">ACEITE TÉRMICO</text>
+</g>
+<polygon class="fk" points="135,63.5 134.1,60.5 135.9,60.5"/>
+<polygon class="fk" points="111,138.5 111.9,141.5 110.1,141.5"/>
+<g transform="translate(135 72) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(135 106) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(125 89) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g class="pq" data-tag="TCV-101" transform="translate(135 89) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+</g>
+<text class="tx" x="136.6" y="95.6" font-size="1.35">FC</text>
+<text class="tx" x="130.6" y="84.4" font-size="1.35" text-anchor="middle" font-weight="bold">TCV</text>
+<text class="tx" x="130.6" y="86.3" font-size="1.35" text-anchor="middle" font-weight="bold">101</text>
+<text class="lt" x="138" y="134" font-size="1.35" text-anchor="middle" transform="rotate(-90 138 134)">6"-HM-1008-B2-IH</text>
+<text class="lt" x="109.6" y="112" font-size="1.35" text-anchor="middle" transform="rotate(-90 109.6 112)">6"-HM-1009-B2-IH</text>
+<g class="pq" data-tag="E-101">
+<circle class="bx" cx="144" cy="164.6" r="3.6"/>
+<text class="tx" x="144" y="164.15" font-size="1.55" text-anchor="middle" font-weight="bold">TT</text>
+<text class="tx" x="144" y="166.55" font-size="1.35" text-anchor="middle">102</text>
+</g>
+<g class="pq" data-tag="E-101">
+<rect class="bx" x="140.4" y="124.4" width="7.2" height="7.2"/>
+<circle class="bx" cx="144" cy="128" r="3.6"/>
+<line class="bxl" x1="140.4" y1="128" x2="147.6" y2="128"/>
+<text class="tx" x="144" y="127.55" font-size="1.55" text-anchor="middle" font-weight="bold">TIC</text>
+<text class="tx" x="144" y="129.95" font-size="1.35" text-anchor="middle">102</text>
+</g>
+<text class="tx" x="148.6" y="128.5" font-size="1.3">SP 70 °C</text>
+<g class="pq" data-tag="XV-101" transform="translate(158 175) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+<rect class="eq" x="2.6" y="-6.4" width="2.2" height="2.2"/>
+<text class="tx" x="3.7" y="-4.75" font-size="1.5" text-anchor="middle">S</text>
+</g>
+<text class="tx" x="155" y="179.6" font-size="1.4" text-anchor="end" font-weight="bold">XV-101</text>
+<text class="tx" x="158" y="179.6" font-size="1.35" text-anchor="middle">FC</text>
+<g class="pq" data-tag="XV-101">
+<circle class="bx" cx="153" cy="158" r="3.6"/>
+<text class="tx" x="153" y="157.55" font-size="1.55" text-anchor="middle" font-weight="bold">ZSO</text>
+<text class="tx" x="153" y="159.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<g class="pq" data-tag="XV-101">
+<circle class="bx" cx="163" cy="158" r="3.6"/>
+<text class="tx" x="163" y="157.55" font-size="1.55" text-anchor="middle" font-weight="bold">ZSC</text>
+<text class="tx" x="163" y="159.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="153,142.1 156.9,146 153,149.9 149.1,146"/>
+<text class="tx" x="153" y="145.75" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="153" y="147.6" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<g class="pq" data-tag="SIS-101">
+<polygon class="bx" points="163,142.1 166.9,146 163,149.9 159.1,146"/>
+<text class="tx" x="163" y="145.75" font-size="1.25" text-anchor="middle" font-weight="bold">SIF</text>
+<text class="tx" x="163" y="147.6" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<g class="pq" data-tag="FCV-101">
+<rect class="eq" x="168.8" y="173" width="4.4" height="4"/>
+<text class="tx" x="171" y="175.6" font-size="1.15" text-anchor="middle">FE</text>
+</g>
+<g class="pq" data-tag="FCV-101">
+<circle class="bx" cx="171" cy="158.4" r="3.6"/>
+<text class="tx" x="171" y="157.95" font-size="1.55" text-anchor="middle" font-weight="bold">FT</text>
+<text class="tx" x="171" y="160.35" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<g transform="translate(180 175) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(198 175) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(189 187) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g class="pq" data-tag="FCV-101" transform="translate(189 175) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+</g>
+<text class="tx" x="191.6" y="179.4" font-size="1.35">FC</text>
+<text class="tx" x="189" y="190.6" font-size="1.4" text-anchor="middle" font-weight="bold">FCV-101</text>
+<g class="pq" data-tag="FCV-101">
+<rect class="bx" x="185.4" y="154.8" width="7.2" height="7.2"/>
+<circle class="bx" cx="189" cy="158.4" r="3.6"/>
+<line class="bxl" x1="185.4" y1="158.4" x2="192.6" y2="158.4"/>
+<text class="tx" x="189" y="157.95" font-size="1.55" text-anchor="middle" font-weight="bold">FIC</text>
+<text class="tx" x="189" y="160.35" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="193.6" y="158.9" font-size="1.3">SP 3200 m³/d</text>
+<polygon class="fk" points="208.5,175 205.5,175.9 205.5,174.1"/>
+<text class="lt" x="213" y="173.7" font-size="1.35" text-anchor="middle">6"-P-1003-A3-IH</text>
+<text class="tx" x="231.2" y="164" font-size="1.15">N1</text>
+<line class="nz" x1="224" y1="100" x2="224" y2="96.8"/>
+<line class="nz" x1="222.7" y1="96.8" x2="225.3" y2="96.8"/>
+<g class="pq" data-tag="LT-101">
+<circle class="bx" cx="222" cy="87" r="3.6"/>
+<text class="tx" x="222" y="86.55" font-size="1.55" text-anchor="middle" font-weight="bold">LT</text>
+<text class="tx" x="222" y="88.95" font-size="1.35" text-anchor="middle">102</text>
+</g>
+<text class="tx" x="217.4" y="86.55" font-size="1.3" text-anchor="end">COLCHÓN</text>
+<text class="tx" x="217.4" y="88.45" font-size="1.3" text-anchor="end">DE EMULSIÓN</text>
+<g class="pq" data-tag="TR-101A">
+<line class="nz" x1="238" y1="100" x2="238" y2="97"/>
+<line class="nz" x1="236.7" y1="97" x2="239.3" y2="97"/>
+<rect class="eq" x="233" y="87" width="10" height="10"/>
+<circle class="eqt" cx="236.7" cy="92" r="2.4"/>
+<circle class="eqt" cx="239.3" cy="92" r="2.4"/>
+</g>
+<rect class="eq" x="236.4" y="58.4" width="3.2" height="3.2"/>
+<g class="pq" data-tag="TR-101A">
+<line class="nz" x1="256" y1="100" x2="256" y2="97"/>
+<line class="nz" x1="254.7" y1="97" x2="257.3" y2="97"/>
+<rect class="eq" x="251" y="87" width="10" height="10"/>
+<circle class="eqt" cx="254.7" cy="92" r="2.4"/>
+<circle class="eqt" cx="257.3" cy="92" r="2.4"/>
+</g>
+<rect class="eq" x="254.4" y="58.4" width="3.2" height="3.2"/>
+<text class="tx" x="232.4" y="93.2" font-size="1.3" text-anchor="end" font-weight="bold">TR-101A</text>
+<text class="tx" x="232.4" y="95.2" font-size="1.15" text-anchor="end">50 kVA</text>
+<text class="tx" x="261.6" y="93.2" font-size="1.3" font-weight="bold">TR-101B</text>
+<text class="tx" x="261.6" y="95.2" font-size="1.15">50 kVA</text>
+<text class="tx" x="236.6" y="64.6" font-size="1.1" text-anchor="end">KM-A</text>
+<text class="tx" x="257.4" y="64.6" font-size="1.1">KM-B</text>
+<g class="pq" data-tag="CCM-101">
+<polygon class="op" points="244.4,44 244.4,49.6 247,52 249.6,49.6 249.6,44"/>
+<text class="tx" x="247.5" y="46.8" font-size="1.35" text-anchor="middle" font-weight="bold" transform="rotate(-90 247.5 46.8)">CCM</text>
+<text class="tx" x="243.2" y="47.63" font-size="1.3" text-anchor="end">DESDE CCM-101</text>
+<text class="tx" x="243.2" y="49.38" font-size="1.3" text-anchor="end">400 V · SE-101</text>
+</g>
+<line class="nz" x1="247" y1="100" x2="247" y2="96.8"/>
+<line class="nz" x1="245.7" y1="96.8" x2="248.3" y2="96.8"/>
+<g class="pq" data-tag="LSLL-101">
+<circle class="bx" cx="247" cy="79" r="3.6"/>
+<text class="tx" x="247" y="78.55" font-size="1.3" text-anchor="middle" font-weight="bold">LSLL</text>
+<text class="tx" x="247" y="80.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<g class="pq" data-tag="SIS-101">
+<polygon class="bx" points="247,56.1 250.9,60 247,63.9 243.1,60"/>
+<text class="tx" x="247" y="59.75" font-size="1.25" text-anchor="middle" font-weight="bold">SIF</text>
+<text class="tx" x="247" y="61.6" font-size="1.3" text-anchor="middle" font-weight="bold">1</text>
+</g>
+<g class="pq" data-tag="TR-101A">
+<rect class="bx" x="225.4" y="70.4" width="7.2" height="7.2"/>
+<circle class="bx" cx="229" cy="74" r="3.6"/>
+<line class="bxl" x1="225.4" y1="74" x2="232.6" y2="74"/>
+<text class="tx" x="229" y="73.55" font-size="1.55" text-anchor="middle" font-weight="bold">II</text>
+<text class="tx" x="229" y="75.95" font-size="1.35" text-anchor="middle">101A</text>
+</g>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="229,56.1 232.9,60 229,63.9 225.1,60"/>
+<text class="tx" x="229" y="59.75" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="229" y="61.6" font-size="1.3" text-anchor="middle" font-weight="bold">4</text>
+</g>
+<g class="pq" data-tag="TR-101A">
+<rect class="bx" x="260.9" y="70.4" width="7.2" height="7.2"/>
+<circle class="bx" cx="264.5" cy="74" r="3.6"/>
+<line class="bxl" x1="260.9" y1="74" x2="268.1" y2="74"/>
+<text class="tx" x="264.5" y="73.55" font-size="1.55" text-anchor="middle" font-weight="bold">II</text>
+<text class="tx" x="264.5" y="75.95" font-size="1.35" text-anchor="middle">101B</text>
+</g>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="264.5,56.1 268.4,60 264.5,63.9 260.6,60"/>
+<text class="tx" x="264.5" y="59.75" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="264.5" y="61.6" font-size="1.3" text-anchor="middle" font-weight="bold">4</text>
+</g>
+<line class="nz" x1="272" y1="100" x2="272" y2="97.8"/>
+<line class="nz" x1="270.7" y1="97.8" x2="273.3" y2="97.8"/>
+<g transform="translate(272 93) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<text class="tx" x="274.2" y="93.6" font-size="1.25">LO</text>
+<g class="pq" data-tag="PSV-101">
+<polygon class="eq" points="270.4,85 273.6,85 272,81.6"/>
+<polygon class="eq" points="275.4,80 275.4,83.2 272,81.6"/>
+<polyline class="eqt" points="272,81.6 272,80.6 273.2,80 270.8,79 273.2,78 270.8,77 272,76.4 272,75.6"/>
+<line class="eqt" x1="270.6" y1="75.6" x2="273.4" y2="75.6"/>
+</g>
+<text class="tx" x="272" y="71.2" font-size="1.35" text-anchor="middle" font-weight="bold">PSV-101</text>
+<text class="tx" x="272" y="73.2" font-size="1.15" text-anchor="middle">10 bar g</text>
+<g class="pq" data-tag="PSV-101">
+<polygon class="op" points="274.8,56 274.8,50.4 277.4,48 280,50.4 280,56"/>
+<text class="tx" x="277.9" y="53.2" font-size="1.35" text-anchor="middle" font-weight="bold" transform="rotate(-90 277.9 53.2)">FL</text>
+<text class="tx" x="281.2" y="52.5" font-size="1.3">A ANTORCHA</text>
+</g>
+<text class="lt" x="279.6" y="70" font-size="1.35" text-anchor="middle" transform="rotate(-90 279.6 70)">4"-FL-1011-A1</text>
+<line class="nz" x1="284" y1="100" x2="284" y2="96.8"/>
+<line class="nz" x1="282.7" y1="96.8" x2="285.3" y2="96.8"/>
+<g class="pq" data-tag="SIS-101">
+<circle class="bx" cx="284" cy="86.6" r="3.6"/>
+<text class="tx" x="284" y="86.15" font-size="1.3" text-anchor="middle" font-weight="bold">PSHH</text>
+<text class="tx" x="284" y="88.55" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<g class="pq" data-tag="SIS-101">
+<polygon class="bx" points="284,71.5 287.9,75.4 284,79.3 280.1,75.4"/>
+<text class="tx" x="284" y="75.15" font-size="1.25" text-anchor="middle" font-weight="bold">SIF</text>
+<text class="tx" x="284" y="77" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<text class="tx" x="288.4" y="76" font-size="1.15">9 bar g</text>
+<line class="nz" x1="295" y1="100" x2="295" y2="96.8"/>
+<line class="nz" x1="293.7" y1="96.8" x2="296.3" y2="96.8"/>
+<g class="pq" data-tag="PCV-101">
+<circle class="bx" cx="295" cy="86.6" r="3.6"/>
+<text class="tx" x="295" y="86.15" font-size="1.55" text-anchor="middle" font-weight="bold">PT</text>
+<text class="tx" x="295" y="88.55" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="307.2" y="97.8" font-size="1.15">N2</text>
+<polygon class="fk" points="306,76.5 306.9,79.5 305.1,79.5"/>
+<text class="lt" x="308.2" y="90" font-size="1.35" text-anchor="middle" transform="rotate(-90 308.2 90)">8"-P-1004-A3-IH</text>
+<g class="pq" data-tag="AT-101">
+<rect class="eq" x="311.8" y="62" width="4.4" height="4"/>
+<text class="tx" x="314" y="64.6" font-size="1.15" text-anchor="middle">FE</text>
+</g>
+<g class="pq" data-tag="AT-101">
+<circle class="bx" cx="314" cy="55" r="3.6"/>
+<text class="tx" x="314" y="54.55" font-size="1.55" text-anchor="middle" font-weight="bold">FT</text>
+<text class="tx" x="314" y="56.95" font-size="1.35" text-anchor="middle">102</text>
+</g>
+<g class="pq" data-tag="AT-101">
+<circle class="bx" cx="323" cy="75" r="3.6"/>
+<text class="tx" x="323" y="74.55" font-size="1.55" text-anchor="middle" font-weight="bold">AT</text>
+<text class="tx" x="323" y="76.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="318.4" y="73.6" font-size="1.3" text-anchor="end">BS&amp;W</text>
+<text class="tx" x="318.4" y="75.5" font-size="1.3" text-anchor="end">AAH 0,5 %</text>
+<text class="tx" x="318.4" y="77.4" font-size="1.3" text-anchor="end">AAHH 1 %</text>
+<g class="pq" data-tag="AT-101">
+<rect class="bx" x="330.9" y="77.8" width="7.2" height="7.2"/>
+<circle class="bx" cx="334.5" cy="81.4" r="3.6"/>
+<line class="bxl" x1="330.9" y1="81.4" x2="338.1" y2="81.4"/>
+<text class="tx" x="334.5" y="80.95" font-size="1.55" text-anchor="middle" font-weight="bold">AY</text>
+<text class="tx" x="334.5" y="83.35" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="339.1" y="80.95" font-size="1.3">SALES</text>
+<text class="tx" x="339.1" y="82.85" font-size="1.3">g/m³</text>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="323,88.1 326.9,92 323,95.9 319.1,92"/>
+<text class="tx" x="323" y="91.75" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="323" y="93.6" font-size="1.3" text-anchor="middle" font-weight="bold">3</text>
+</g>
+<g transform="translate(339 64) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(357 64) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(348 73) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g class="pq" data-tag="PCV-101" transform="translate(348 64) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+</g>
+<text class="tx" x="350.6" y="68.4" font-size="1.35">FO</text>
+<text class="tx" x="344.6" y="58.6" font-size="1.4" text-anchor="end" font-weight="bold">PCV-101</text>
+<g class="pq" data-tag="PCV-101">
+<rect class="bx" x="344.4" y="44.4" width="7.2" height="7.2"/>
+<circle class="bx" cx="348" cy="48" r="3.6"/>
+<line class="bxl" x1="344.4" y1="48" x2="351.6" y2="48"/>
+<text class="tx" x="348" y="47.55" font-size="1.55" text-anchor="middle" font-weight="bold">PIC</text>
+<text class="tx" x="348" y="49.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="348" y="43.2" font-size="1.3" text-anchor="middle">SP 5,5 bar g · PAL 3,5</text>
+<g class="pq" data-tag="XV-301" transform="translate(377 64) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+<rect class="eq" x="2.6" y="-6.4" width="2.2" height="2.2"/>
+<text class="tx" x="3.7" y="-4.75" font-size="1.5" text-anchor="middle">S</text>
+</g>
+<g class="pq" data-tag="XV-301" transform="translate(377 84) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="4.2"/>
+<path class="eq" d="M -2.6 4.2 A 2.6 2.6 0 0 0 2.6 4.2 Z"/>
+<rect class="eq" x="2.6" y="4.2" width="2.2" height="2.2"/>
+<text class="tx" x="3.7" y="5.85" font-size="1.5" text-anchor="middle">S</text>
+</g>
+<text class="tx" x="377" y="68.6" font-size="1.3" text-anchor="middle" font-weight="bold">XV-301</text>
+<text class="tx" x="377" y="81.4" font-size="1.3" text-anchor="middle" font-weight="bold">XV-302</text>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="377,46.7 380.9,50.6 377,54.5 373.1,50.6"/>
+<text class="tx" x="377" y="50.35" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="377" y="52.2" font-size="1.3" text-anchor="middle" font-weight="bold">3</text>
+</g>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="377,93.5 380.9,97.4 377,101.3 373.1,97.4"/>
+<text class="tx" x="377" y="97.15" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="377" y="99" font-size="1.3" text-anchor="middle" font-weight="bold">3</text>
+</g>
+<g class="pq" data-tag="TK-301">
+<polygon class="op" points="390,61.4 401.6,61.4 404,64 401.6,66.6 390,66.6"/>
+<text class="tx" x="395.8" y="64.55" font-size="1.4" text-anchor="middle" font-weight="bold">TK-301</text>
+<text class="tx" x="404" y="58.65" font-size="1.3" text-anchor="end">A TK-301</text>
+<text class="tx" x="404" y="60.4" font-size="1.3" text-anchor="end">CRUDO TRATADO</text>
+</g>
+<g class="pq" data-tag="TK-302">
+<polygon class="op" points="390,81.4 401.6,81.4 404,84 401.6,86.6 390,86.6"/>
+<text class="tx" x="395.8" y="84.55" font-size="1.4" text-anchor="middle" font-weight="bold">TK-302</text>
+<text class="tx" x="404" y="88.7" font-size="1.3" text-anchor="end">A TK-302</text>
+<text class="tx" x="404" y="90.45" font-size="1.3" text-anchor="end">RECUPERACIÓN</text>
+</g>
+<text class="lt" x="404" y="69.4" font-size="1.35" text-anchor="end">8"-P-1005-A3</text>
+<text class="lt" x="363.4" y="76" font-size="1.35" text-anchor="middle" transform="rotate(-90 363.4 76)">6"-P-1006-A3</text>
+<g transform="translate(328.6 109.17) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(328.6 154.17) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g class="pq" data-tag="LT-101">
+<polyline class="br" points="336,103.17 336,158.17"/>
+<line class="eq" x1="334.6" y1="158.17" x2="337.4" y2="158.17"/>
+</g>
+<g transform="translate(336 162.17) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<text class="tx" x="337.6" y="166.57" font-size="1.1">DRENAJE</text>
+<text class="tx" x="338.2" y="130.83" font-size="1.1">PUENTE</text>
+<text class="tx" x="338.2" y="132.53" font-size="1.1">DE NIVEL</text>
+<text class="tx" x="338.2" y="134.23" font-size="1.1">3"</text>
+<g class="pq" data-tag="LT-101">
+<circle class="bx" cx="350.6" cy="103.17" r="3.6"/>
+<text class="tx" x="350.6" y="102.72" font-size="1.55" text-anchor="middle" font-weight="bold">LT</text>
+<text class="tx" x="350.6" y="105.12" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="355.2" y="102.72" font-size="1.3">INTERFASE</text>
+<text class="tx" x="355.2" y="104.62" font-size="1.3">RADAR GUIADO</text>
+<g class="pq" data-tag="LT-101">
+<rect class="bx" x="347" y="142.4" width="7.2" height="7.2"/>
+<circle class="bx" cx="350.6" cy="146" r="3.6"/>
+<line class="bxl" x1="347" y1="146" x2="354.2" y2="146"/>
+<text class="tx" x="350.6" y="145.55" font-size="1.55" text-anchor="middle" font-weight="bold">LIC</text>
+<text class="tx" x="350.6" y="147.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="355.2" y="143.65" font-size="1.3">SP 1100 mm</text>
+<text class="tx" x="355.2" y="145.55" font-size="1.3">LAHH 1850</text>
+<text class="tx" x="355.2" y="147.45" font-size="1.3">LAH 1500</text>
+<text class="tx" x="355.2" y="149.35" font-size="1.3">LAL 700</text>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="362.6,159.5 366.5,163.4 362.6,167.3 358.7,163.4"/>
+<text class="tx" x="362.6" y="163.15" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="362.6" y="165" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<g class="pq" data-tag="TT-103">
+<circle class="bx" cx="193.4" cy="112.5" r="3.6"/>
+<text class="tx" x="193.4" y="112.05" font-size="1.55" text-anchor="middle" font-weight="bold">TT</text>
+<text class="tx" x="193.4" y="114.45" font-size="1.35" text-anchor="middle">103</text>
+</g>
+<text class="tx" x="188.8" y="112.05" font-size="1.3" text-anchor="end">TAL 58 °C</text>
+<text class="tx" x="188.8" y="113.95" font-size="1.3" text-anchor="end">TSLL 40 °C</text>
+<g class="pq" data-tag="UCP-101">
+<polygon class="bx" points="193.4,97.6 197.3,101.5 193.4,105.4 189.5,101.5"/>
+<text class="tx" x="193.4" y="101.25" font-size="1.25" text-anchor="middle" font-weight="bold">I</text>
+<text class="tx" x="193.4" y="103.1" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<g transform="translate(199.6 152.5) rotate(0)">
+<polygon class="eq" points="-1.6,-0.99 1.6,0.99 1.6,-0.99 -1.6,0.99"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g transform="translate(199.6 146.67) rotate(0)">
+<polygon class="eq" points="-1.6,-0.99 1.6,0.99 1.6,-0.99 -1.6,0.99"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g transform="translate(199.6 140.83) rotate(0)">
+<polygon class="eq" points="-1.6,-0.99 1.6,0.99 1.6,-0.99 -1.6,0.99"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g transform="translate(199.6 135) rotate(0)">
+<polygon class="eq" points="-1.6,-0.99 1.6,0.99 1.6,-0.99 -1.6,0.99"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g transform="translate(199.6 129.17) rotate(0)">
+<polygon class="eq" points="-1.6,-0.99 1.6,0.99 1.6,-0.99 -1.6,0.99"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<text class="tx" x="193.8" y="129.67" font-size="1.25" text-anchor="end" font-weight="bold">TC-1…5</text>
+<text class="tx" x="193.8" y="135.83" font-size="1.15" text-anchor="end">ROBINETES</text>
+<text class="tx" x="193.8" y="137.53" font-size="1.15" text-anchor="end">DE PRUEBA ½"</text>
+<text class="tx" x="204" y="103.6" font-size="1.15" text-anchor="end">M1 24"</text>
+<g transform="translate(242 193) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<text class="tx" x="243" y="164" font-size="1.15">D1</text>
+<g transform="translate(254 193) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<text class="tx" x="255" y="164" font-size="1.15">D2</text>
+<g class="pq" data-tag="X-401" transform="translate(222 202) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="4.2"/>
+<path class="eq" d="M -2.6 4.2 A 2.6 2.6 0 0 0 2.6 4.2 Z"/>
+<rect class="eq" x="2.6" y="4.2" width="2.2" height="2.2"/>
+<text class="tx" x="3.7" y="5.85" font-size="1.5" text-anchor="middle">S</text>
+</g>
+<text class="tx" x="222" y="199.6" font-size="1.25" text-anchor="middle" font-weight="bold">XV-105</text>
+<g transform="translate(215.4 202) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<text class="lt" x="248" y="205.4" font-size="1.35" text-anchor="middle">2"-D-1013-A3</text>
+<g class="pq" data-tag="X-401">
+<polygon class="op" points="209.4,210 209.4,217.6 212,220 214.6,217.6 214.6,210"/>
+<text class="tx" x="212.5" y="213.8" font-size="1.35" text-anchor="middle" font-weight="bold" transform="rotate(-90 212.5 213.8)">X-401</text>
+<text class="tx" x="208.2" y="214.63" font-size="1.3" text-anchor="end">A VOLQUETE X-401</text>
+<text class="tx" x="208.2" y="216.38" font-size="1.3" text-anchor="end">BARROS / DRENAJE</text>
+</g>
+<text class="tx" x="271.2" y="164" font-size="1.15">W1</text>
+<g class="pq" data-tag="GRID" transform="translate(270 197) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+<rect class="eq" x="2.6" y="-6.4" width="2.2" height="2.2"/>
+<text class="tx" x="3.7" y="-4.75" font-size="1.5" text-anchor="middle">S</text>
+</g>
+<text class="tx" x="267" y="196.2" font-size="1.25" text-anchor="end" font-weight="bold">XV-104</text>
+<g transform="translate(270 186) rotate(-90)">
+<polygon class="fk" points="-2.4,-1.49 -2.4,1.49 0,0"/>
+<polygon class="eq" points="2.4,-1.49 2.4,1.49 0,0"/>
+<line class="eqt" x1="0" y1="-2.09" x2="0" y2="2.09"/>
+</g>
+<g transform="translate(270 205.5) rotate(90)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g class="pq" data-tag="X-401">
+<polygon class="op" points="267.4,220 267.4,212.4 270,210 272.6,212.4 272.6,220"/>
+<text class="tx" x="270.5" y="216.2" font-size="1.35" text-anchor="middle" font-weight="bold" transform="rotate(-90 270.5 216.2)">AS</text>
+<text class="tx" x="273.8" y="214.63" font-size="1.3">DESDE AGUA DE</text>
+<text class="tx" x="273.8" y="216.38" font-size="1.3">SERVICIO · 6 bar g</text>
+</g>
+<text class="lt" x="268.8" y="175" font-size="1.35" text-anchor="middle" transform="rotate(-90 268.8 175)">2"-WW-1012-A1</text>
+<text class="tx" x="295.2" y="164" font-size="1.15">N3</text>
+<polygon class="fk" points="294,181.5 293.1,178.5 294.9,178.5"/>
+<text class="lt" x="292.8" y="186" font-size="1.35" text-anchor="middle" transform="rotate(-90 292.8 186)">3"-PW-1007-A3</text>
+<g transform="translate(304 196) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(324 196) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<g transform="translate(314 206) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<g class="pq" data-tag="LV-101" transform="translate(314 196) rotate(0)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+</g>
+<text class="tx" x="316.6" y="200.4" font-size="1.35">FC</text>
+<text class="tx" x="314" y="210" font-size="1.4" text-anchor="middle" font-weight="bold">LV-101</text>
+<g class="pq" data-tag="LV-101">
+<rect class="eq" x="333.8" y="194" width="4.4" height="4"/>
+<text class="tx" x="336" y="196.6" font-size="1.15" text-anchor="middle">FE</text>
+</g>
+<g class="pq" data-tag="LV-101">
+<circle class="bx" cx="336" cy="184.8" r="3.6"/>
+<text class="tx" x="336" y="184.35" font-size="1.55" text-anchor="middle" font-weight="bold">FT</text>
+<text class="tx" x="336" y="186.75" font-size="1.35" text-anchor="middle">103</text>
+</g>
+<g class="pq" data-tag="LV-101">
+<circle class="bx" cx="346" cy="184.8" r="3.6"/>
+<text class="tx" x="346" y="184.35" font-size="1.55" text-anchor="middle" font-weight="bold">AT</text>
+<text class="tx" x="346" y="186.75" font-size="1.35" text-anchor="middle">102</text>
+</g>
+<text class="tx" x="350.6" y="184.35" font-size="1.3">ACEITE EN AGUA</text>
+<text class="tx" x="350.6" y="186.25" font-size="1.3">AAH 300 ppm</text>
+<polygon class="fk" points="381.5,196 378.5,196.9 378.5,195.1"/>
+<g class="pq" data-tag="LV-101">
+<polygon class="op" points="390,193.4 401.6,193.4 404,196 401.6,198.6 390,198.6"/>
+<text class="tx" x="395.8" y="196.55" font-size="1.4" text-anchor="middle" font-weight="bold">PIA</text>
+<text class="tx" x="404" y="200.7" font-size="1.3" text-anchor="end">A PLANTA DE</text>
+<text class="tx" x="404" y="202.45" font-size="1.3" text-anchor="end">INYECCIÓN DE AGUA</text>
+</g>
+<text class="lt" x="373" y="199.4" font-size="1.35" text-anchor="middle">3"-PW-1008-A3</text>
+<g class="pq" data-tag="EP-101">
+<rect class="pk" x="20" y="52" width="50" height="30" rx="1"/>
+</g>
+<text class="tx" x="22.4" y="56.4" font-size="1.4" font-weight="bold">EP-101 · ESTACIÓN LOCAL (Ex)</text>
+<g class="pq" data-tag="EP-101">
+<circle class="bx" cx="30" cy="66" r="3.6"/>
+<text class="tx" x="30" y="65.55" font-size="1.55" text-anchor="middle" font-weight="bold">HS</text>
+<text class="tx" x="30" y="67.95" font-size="1.35" text-anchor="middle">101</text>
+</g>
+<text class="tx" x="30" y="71.8" font-size="1.3" text-anchor="middle">LOCAL/REM.</text>
+<g class="pq" data-tag="SIS-101">
+<circle class="bx" cx="45" cy="66" r="3.6"/>
+<text class="tx" x="45" y="65.55" font-size="1.55" text-anchor="middle" font-weight="bold">HS</text>
+<text class="tx" x="45" y="67.95" font-size="1.35" text-anchor="middle">102</text>
+</g>
+<text class="tx" x="49.6" y="66.5" font-size="1.3">ESD</text>
+<g class="pq" data-tag="EP-101">
+<circle class="bx" cx="60" cy="66" r="3.6"/>
+<text class="tx" x="60" y="65.55" font-size="1.55" text-anchor="middle" font-weight="bold">HS</text>
+<text class="tx" x="60" y="67.95" font-size="1.35" text-anchor="middle">103</text>
+</g>
+<text class="tx" x="60" y="71.8" font-size="1.3" text-anchor="middle">ARR./PARADA</text>
+<g class="pq" data-tag="SIS-101">
+<polygon class="bx" points="45,86.1 48.9,90 45,93.9 41.1,90"/>
+<text class="tx" x="45" y="89.75" font-size="1.25" text-anchor="middle" font-weight="bold">SIF</text>
+<text class="tx" x="45" y="91.6" font-size="1.3" text-anchor="middle" font-weight="bold">2</text>
+</g>
+<text class="tx" x="20" y="103.4" font-size="1.4" font-weight="bold">ARQUITECTURA DE CONTROL (REFERENCIA)</text>
+<rect class="pk" x="20" y="106" width="76" height="20" rx="1"/>
+<text class="tx" x="22" y="109.4" font-size="1.15">SE-101 · SALA ELÉCTRICA · ÁREA NO CLASIFICADA</text>
+<g class="pq" data-tag="UCP-101">
+<rect class="bx" x="23" y="113" width="15" height="8"/>
+</g>
+<text class="tx" x="30.5" y="116.8" font-size="1.3" text-anchor="middle" font-weight="bold">HMI-101</text>
+<text class="tx" x="30.5" y="118.8" font-size="1.1" text-anchor="middle">OPERADOR</text>
+<g class="pq" data-tag="UCP-101">
+<rect class="bx" x="42" y="113" width="15" height="8"/>
+</g>
+<text class="tx" x="49.5" y="116.8" font-size="1.3" text-anchor="middle" font-weight="bold">UCP-101</text>
+<text class="tx" x="49.5" y="118.8" font-size="1.1" text-anchor="middle">PLC CONTROL</text>
+<g class="pq" data-tag="SIS-101">
+<rect class="bx" x="61" y="113" width="15" height="8"/>
+</g>
+<text class="tx" x="68.5" y="116.8" font-size="1.3" text-anchor="middle" font-weight="bold">SIS-101</text>
+<text class="tx" x="68.5" y="118.8" font-size="1.1" text-anchor="middle">PLC SIL 2</text>
+<g class="pq" data-tag="CCM-101">
+<rect class="bx" x="79" y="113" width="15" height="8"/>
+</g>
+<text class="tx" x="86.5" y="116.8" font-size="1.3" text-anchor="middle" font-weight="bold">CCM-101</text>
+<text class="tx" x="86.5" y="118.8" font-size="1.1" text-anchor="middle">400 V</text>
+<text class="tx" x="20" y="131" font-size="1.15">CAMPO · ZONA 2</text>
+<g class="pq" data-tag="JB-101">
+<rect class="bx" x="42" y="133" width="15" height="7"/>
+</g>
+<text class="tx" x="49.5" y="136.3" font-size="1.3" text-anchor="middle" font-weight="bold">JB-101</text>
+<text class="tx" x="49.5" y="138.3" font-size="1.1" text-anchor="middle">SEÑALES</text>
+<g class="pq" data-tag="JB-102">
+<rect class="bx" x="61" y="133" width="15" height="7"/>
+</g>
+<text class="tx" x="68.5" y="136.3" font-size="1.3" text-anchor="middle" font-weight="bold">JB-102</text>
+<text class="tx" x="68.5" y="138.3" font-size="1.1" text-anchor="middle">SEGURIDAD</text>
+<text class="tx" x="86.5" y="139" font-size="1.1" text-anchor="middle">MOTORES</text>
+<text class="tx" x="86.5" y="140.8" font-size="1.1" text-anchor="middle">Y TR</text>
+<text class="tx" x="49.5" y="143" font-size="1.1" text-anchor="middle">INSTR. DE CONTROL</text>
+<text class="tx" x="68.5" y="143" font-size="1.1" text-anchor="middle">INSTR. SIS</text>
+<rect class="bxf" x="15" y="224" width="105" height="58"/>
+<rect class="bxf" x="120" y="224" width="102" height="58"/>
+<rect class="bxf" x="222" y="224" width="90" height="58"/>
+<rect class="bxf" x="312" y="224" width="93" height="58"/>
+<text class="tx" x="18" y="228" font-size="1.9" font-weight="bold">NOTAS</text>
+<text class="tx" x="18" y="232.2" font-size="1.35">1.</text>
+<text class="tx" x="21.6" y="232.2" font-size="1.35">PRESIONES EN bar g, TEMPERATURAS EN °C, NIVELES EN mm DESDE EL FONDO INTERIOR DE V-101, SALVO INDICACIÓN.</text>
+<text class="tx" x="18" y="235.75" font-size="1.35">2.</text>
+<text class="tx" x="21.6" y="235.75" font-size="1.35">NIL = NIVEL NORMAL DE INTERFASE. CONSIGNAS Y ALARMAS AJUSTABLES DESDE LA HMI DENTRO DE LÍMITES PROTEGIDOS POR</text>
+<text class="tx" x="21.6" y="237.75" font-size="1.35">CONTRASEÑA.</text>
+<text class="tx" x="18" y="241.3" font-size="1.35">3.</text>
+<text class="tx" x="21.6" y="241.3" font-size="1.35">LAHH SE TOMA DE LT-101 (CONTROL). SI EL ANÁLISIS LOPA LE ASIGNA REDUCCIÓN DE RIESGO, USAR UN TRANSMISOR</text>
+<text class="tx" x="21.6" y="243.3" font-size="1.35">INDEPENDIENTE CABLEADO A SIS-101.</text>
+<text class="tx" x="18" y="246.85" font-size="1.35">4.</text>
+<text class="tx" x="21.6" y="246.85" font-size="1.35">LAS FUNCIONES DEL SIS DESENERGIZAN PARA DISPARAR Y REQUIEREN RESET MANUAL. MATRIZ CAUSA-EFECTO: DES-CE-001.</text>
+<text class="tx" x="18" y="250.4" font-size="1.35">5.</text>
+<text class="tx" x="21.6" y="250.4" font-size="1.35">SKID EN ZONA 2 (IEC 60079-10-1). EQUIPOS ELÉCTRICOS Ex d / Ex e, CLASE DE TEMPERATURA T3.</text>
+<text class="tx" x="18" y="253.95" font-size="1.35">6.</text>
+<text class="tx" x="21.6" y="253.95" font-size="1.35">VÁLVULAS DE BLOQUEO DE PSV-101 BLOQUEADAS ABIERTAS (LO). DESCARGA AUTODRENANTE HACIA EL CABEZAL DE ANTORCHA.</text>
+<text class="tx" x="18" y="257.5" font-size="1.35">7.</text>
+<text class="tx" x="21.6" y="257.5" font-size="1.35">-IH = AISLACIÓN DE CONSERVACIÓN DE CALOR.</text>
+<text class="tx" x="18" y="261.05" font-size="1.35">8.</text>
+<text class="tx" x="21.6" y="261.05" font-size="1.35">XV-104 Y XV-105 SÓLO ABREN EN LA SECUENCIA DE LAVADO DE BARROS.</text>
+<text class="tx" x="18" y="264.6" font-size="1.35">9.</text>
+<text class="tx" x="21.6" y="264.6" font-size="1.35">TRANSMISORES 4-20 mA + HART A 24 Vcc. SEÑALES DISCRETAS 24 Vcc. CABLES DEL SIS POR JB-102 Y BANDEJA PROPIA.</text>
+<text class="tx" x="18" y="268.15" font-size="1.35">10.</text>
+<text class="tx" x="21.6" y="268.15" font-size="1.35">CAÑERÍAS SEGÚN ASME B31.3. ESPESORES Y CLASES DEFINITIVOS SEGÚN ESPECIFICACIÓN DE MATERIALES DEL PROYECTO.</text>
+<text class="tx" x="18" y="271.7" font-size="1.35">11.</text>
+<text class="tx" x="21.6" y="271.7" font-size="1.35">DOCUMENTO DE CARTERA PROFESIONAL. NO APTO PARA CONSTRUCCIÓN.</text>
+<text class="tx" x="123" y="228" font-size="1.9" font-weight="bold">LEYENDA</text>
+<g transform="translate(127 233.2) rotate(0) scale(0.72)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+</g>
+<text class="tx" x="132.2" y="233.75" font-size="1.15">VÁLVULA ESCLUSA</text>
+<g transform="translate(160.5 233.2) rotate(0) scale(0.72)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+</g>
+<text class="tx" x="165.7" y="233.75" font-size="1.15">VÁLVULA GLOBO</text>
+<g transform="translate(194 233.2) rotate(0) scale(0.72)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+</g>
+<text class="tx" x="199.2" y="233.75" font-size="1.15">VÁLVULA ESFÉRICA</text>
+<g transform="translate(127 238.75) rotate(0) scale(0.72)">
+<polygon class="fk" points="-2.4,-1.49 -2.4,1.49 0,0"/>
+<polygon class="eq" points="2.4,-1.49 2.4,1.49 0,0"/>
+<line class="eqt" x1="0" y1="-2.09" x2="0" y2="2.09"/>
+</g>
+<text class="tx" x="132.2" y="239.3" font-size="1.15">VÁLV. DE RETENCIÓN</text>
+<g transform="translate(160.5 240.65) rotate(0) scale(0.72)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="fk" cx="0" cy="0" r="0.75"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+</g>
+<text class="tx" x="165.7" y="239.3" font-size="1.15">VÁLV. DE CONTROL</text>
+<g transform="translate(194 240.65) rotate(0) scale(0.72)">
+<polygon class="eq" points="-2.4,-1.49 2.4,1.49 2.4,-1.49 -2.4,1.49"/>
+<circle class="eq" cx="0" cy="0" r="1.05"/>
+<line class="eqt" x1="0" y1="0" x2="0" y2="-4.2"/>
+<path class="eq" d="M -2.6 -4.2 A 2.6 2.6 0 0 1 2.6 -4.2 Z"/>
+<rect class="eq" x="2.6" y="-6.4" width="2.2" height="2.2"/>
+<text class="tx" x="3.7" y="-4.75" font-size="1.5" text-anchor="middle">S</text>
+</g>
+<text class="tx" x="199.2" y="239.3" font-size="1.15">VÁLV. ON/OFF + SOLEN.</text>
+<circle class="bx" cx="127" cy="244.3" r="2.1"/>
+<text class="tx" x="132.2" y="244.85" font-size="1.15">INSTRUMENTO DE CAMPO</text>
+<rect class="bx" x="158.4" y="242.2" width="4.2" height="4.2"/>
+<circle class="bx" cx="160.5" cy="244.3" r="2.1"/>
+<line class="bxl" x1="158.4" y1="244.3" x2="162.6" y2="244.3"/>
+<text class="tx" x="165.7" y="244.85" font-size="1.15">FUNCIÓN EN PLC + HMI</text>
+<rect class="bx" x="191.9" y="242.2" width="4.2" height="4.2"/>
+<polygon class="bx" points="194,242.2 196.1,244.3 194,246.4 191.9,244.3"/>
+<text class="tx" x="199.2" y="244.85" font-size="1.15">FUNCIÓN EN SIS</text>
+<polygon class="bx" points="127,247.55 129.3,249.85 127,252.15 124.7,249.85"/>
+<text class="tx" x="132.2" y="250.4" font-size="1.15">ENCLAVAMIENTO / SIF</text>
+<line class="eq" x1="160" y1="248.05" x2="160" y2="251.65"/>
+<line class="eq" x1="161" y1="248.05" x2="161" y2="251.65"/>
+<text class="tx" x="165.7" y="250.4" font-size="1.15">PLACA RESTRICTORA</text>
+<polygon class="op" points="190.4,248.35 195.4,248.35 197.6,249.85 195.4,251.35 190.4,251.35"/>
+<text class="tx" x="199.2" y="250.4" font-size="1.15">FUERA DE HOJA</text>
+<text class="tx" x="132.2" y="255.95" font-size="1.15">PROCESO PRINCIPAL</text>
+<text class="tx" x="165.7" y="255.95" font-size="1.15">SECUNDARIA / SERVICIOS</text>
+<text class="tx" x="199.2" y="255.95" font-size="1.15">SEÑAL ELÉCTRICA</text>
+<text class="tx" x="132.2" y="261.5" font-size="1.15">ALIMENTACIÓN ELÉCTRICA</text>
+<text class="tx" x="165.7" y="261.5" font-size="1.15">ENLACE DE DATOS</text>
+<line class="pk" x1="190.4" y1="260.95" x2="197.6" y2="260.95"/>
+<text class="tx" x="199.2" y="261.5" font-size="1.15">LÍMITE DE TABLERO / SALA</text>
+<text class="tx" x="123" y="265.9" font-size="1.3" font-weight="bold">NUMERACIÓN: DIÁM.-SERVICIO-Nº-ESPEC.[-AISL.]</text>
+<text class="tx" x="123" y="268.3" font-size="1.2">P PROCESO · HM ACEITE TÉRMICO · CI QUÍMICO · PW AGUA PRODUCIDA</text>
+<text class="tx" x="123" y="270.15" font-size="1.2">WW AGUA DE LAVADO · D DRENAJE · FL ANTORCHA</text>
+<text class="tx" x="123" y="272" font-size="1.2">A3 / A1 ACERO AL CARBONO ANSI 300 / 150 · B2 ACEITE TÉRMICO 300</text>
+<text class="tx" x="123" y="273.85" font-size="1.2">S1 TUBING INOX 316</text>
+<text class="tx" x="225" y="228" font-size="1.9" font-weight="bold">ENCLAVAMIENTOS Y FUNCIONES DE SEGURIDAD</text>
+<line class="bxl" x1="222" y1="230.4" x2="312" y2="230.4"/>
+<text class="tx" x="225" y="232.6" font-size="1.35" font-weight="bold">ID</text>
+<text class="tx" x="235" y="232.6" font-size="1.35" font-weight="bold">CAUSA</text>
+<text class="tx" x="272" y="232.6" font-size="1.35" font-weight="bold">EFECTO</text>
+<line class="bxl" x1="222" y1="234" x2="312" y2="234"/>
+<text class="tx" x="225" y="236.4" font-size="1.3" font-weight="bold">I-1</text>
+<text class="tx" x="235" y="236.4" font-size="1.28">PT-101 ≥ 3 bar g, SIN GAS EN DOMO,</text>
+<text class="tx" x="235" y="238.25" font-size="1.28">700 ≤ LT-101 ≤ 1500 mm, SIN ESD</text>
+<text class="tx" x="272" y="236.4" font-size="1.28">HABILITA LA SECUENCIA DE ARRANQUE (P-201</text>
+<text class="tx" x="272" y="238.25" font-size="1.28">→ P-101 → XV-101 → CALOR → REJILLAS)</text>
+<line class="bxl" x1="222" y1="239.75" x2="312" y2="239.75"/>
+<text class="tx" x="225" y="242.15" font-size="1.3" font-weight="bold">I-2</text>
+<text class="tx" x="235" y="242.15" font-size="1.28">LT-101 &gt; 1850 mm (LAHH) Ó TT-103 &lt;</text>
+<text class="tx" x="235" y="244" font-size="1.28">40 °C (TSLL)</text>
+<text class="tx" x="272" y="242.15" font-size="1.28">CIERRA XV-101 (CORTE DE ALIMENTACIÓN).</text>
+<text class="tx" x="272" y="244" font-size="1.28">REANUDA SOLA AL NORMALIZARSE</text>
+<line class="bxl" x1="222" y1="245.5" x2="312" y2="245.5"/>
+<text class="tx" x="225" y="247.9" font-size="1.3" font-weight="bold">I-3</text>
+<text class="tx" x="235" y="247.9" font-size="1.28">AT-101 &gt; 1 % DURANTE 20 s</text>
+<text class="tx" x="272" y="247.9" font-size="1.28">ABRE XV-302 Y CIERRA XV-301 (DESVÍO A</text>
+<text class="tx" x="272" y="249.75" font-size="1.28">TK-302). VUELVE CON 30 s &lt; 0,5 %</text>
+<line class="bxl" x1="222" y1="251.25" x2="312" y2="251.25"/>
+<text class="tx" x="225" y="253.65" font-size="1.3" font-weight="bold">I-4</text>
+<text class="tx" x="235" y="253.65" font-size="1.28">II-101A / B &gt; 2,5 A DURANTE 5 s</text>
+<text class="tx" x="272" y="253.65" font-size="1.28">ABRE KM-A / KM-B (DISPARO DE REJILLA).</text>
+<text class="tx" x="272" y="255.5" font-size="1.28">RESET MANUAL</text>
+<line class="bxl" x1="222" y1="257" x2="312" y2="257"/>
+<text class="tx" x="225" y="259.4" font-size="1.3" font-weight="bold">SIF-1</text>
+<text class="tx" x="235" y="259.4" font-size="1.28">LSLL-101: GAS EN EL DOMO</text>
+<text class="tx" x="272" y="259.4" font-size="1.28">SIS-101 ABRE KM-A Y KM-B. NO REPONE</text>
+<text class="tx" x="272" y="261.25" font-size="1.28">HASTA RECUPERAR LÍQUIDO</text>
+<line class="bxl" x1="222" y1="262.75" x2="312" y2="262.75"/>
+<text class="tx" x="225" y="265.15" font-size="1.3" font-weight="bold">SIF-2</text>
+<text class="tx" x="235" y="265.15" font-size="1.28">PSHH-101 &gt; 9 bar g Ó HS-102 (ESD)</text>
+<text class="tx" x="272" y="265.15" font-size="1.28">SIS-101 CIERRA XV-101 Y PARA P-101.</text>
+<text class="tx" x="272" y="267" font-size="1.28">RESET MANUAL EN SITIO</text>
+<line class="bxl" x1="222" y1="268.5" x2="312" y2="268.5"/>
+<line class="bxl" x1="233.5" y1="230.4" x2="233.5" y2="268.5"/>
+<line class="bxl" x1="270.5" y1="230.4" x2="270.5" y2="268.5"/>
+<text class="tx" x="315" y="228" font-size="1.6" font-weight="bold">REVISIONES</text>
+<line class="bxl" x1="312" y1="230" x2="405" y2="230"/>
+<text class="tx" x="314" y="232.6" font-size="1.25" font-weight="bold">REV</text>
+<text class="tx" x="322" y="232.6" font-size="1.25" font-weight="bold">FECHA</text>
+<text class="tx" x="338" y="232.6" font-size="1.25" font-weight="bold">DESCRIPCIÓN</text>
+<text class="tx" x="394" y="232.6" font-size="1.25" font-weight="bold">POR</text>
+<line class="bxl" x1="312" y1="233.6" x2="405" y2="233.6"/>
+<text class="tx" x="314" y="236.4" font-size="1.3">A</text>
+<text class="tx" x="322" y="236.4" font-size="1.3">02/11/2026</text>
+<text class="tx" x="338" y="236.4" font-size="1.3">EMITIDO PARA REVISIÓN</text>
+<text class="tx" x="394" y="236.4" font-size="1.3">LC</text>
+<line class="bxl" x1="312" y1="237.8" x2="405" y2="237.8"/>
+<line class="bxl" x1="320.5" y1="230" x2="320.5" y2="237.8"/>
+<line class="bxl" x1="336.5" y1="230" x2="336.5" y2="237.8"/>
+<line class="bxl" x1="392.5" y1="230" x2="392.5" y2="237.8"/>
+<line class="bx" x1="312" y1="237.8" x2="405" y2="237.8"/>
+<text class="tx" x="358.5" y="241.8" font-size="1.7" text-anchor="middle" font-weight="bold">PLANTA MODELO DE TRATAMIENTO DE CRUDO</text>
+<text class="tx" x="358.5" y="244.4" font-size="1.35" text-anchor="middle">UNIDAD 100 · DESHIDRATACIÓN Y DESALADO</text>
+<line class="bxl" x1="312" y1="245.8" x2="405" y2="245.8"/>
+<text class="tx" x="358.5" y="249.8" font-size="2" text-anchor="middle" font-weight="bold">DIAGRAMA DE CAÑERÍAS E INSTRUMENTOS</text>
+<text class="tx" x="358.5" y="253" font-size="2" text-anchor="middle" font-weight="bold">DESHIDRATADOR ELECTROSTÁTICO V-101</text>
+<line class="bxl" x1="312" y1="255" x2="405" y2="255"/>
+<text class="tx" x="313.4" y="257.2" font-size="1.1">PLANO Nº</text>
+<text class="tx" x="313.4" y="260.4" font-size="1.9" font-weight="bold">DES-PID-001</text>
+<line class="bxl" x1="345" y1="255" x2="345" y2="261.4"/>
+<text class="tx" x="346.4" y="257.2" font-size="1.1">REV</text>
+<text class="tx" x="346.4" y="260.4" font-size="1.7" font-weight="bold">A</text>
+<line class="bxl" x1="356" y1="255" x2="356" y2="261.4"/>
+<text class="tx" x="357.4" y="257.2" font-size="1.1">HOJA</text>
+<text class="tx" x="357.4" y="260.4" font-size="1.7" font-weight="bold">1 DE 1</text>
+<line class="bxl" x1="372" y1="255" x2="372" y2="261.4"/>
+<text class="tx" x="373.4" y="257.2" font-size="1.1">ESCALA</text>
+<text class="tx" x="373.4" y="260.4" font-size="1.7" font-weight="bold">S/E</text>
+<line class="bxl" x1="388" y1="255" x2="388" y2="261.4"/>
+<text class="tx" x="389.4" y="257.2" font-size="1.1">FORMATO</text>
+<text class="tx" x="389.4" y="260.4" font-size="1.7" font-weight="bold">A3</text>
+<line class="bxl" x1="312" y1="261.4" x2="405" y2="261.4"/>
+<text class="tx" x="313.4" y="263.6" font-size="1.1">DIBUJÓ</text>
+<text class="tx" x="313.4" y="266.4" font-size="1.35" font-weight="bold">ING. L. CASTILLO</text>
+<line class="bxl" x1="342" y1="261.4" x2="342" y2="267.6"/>
+<text class="tx" x="343.4" y="263.6" font-size="1.1">REVISÓ</text>
+<text class="tx" x="343.4" y="266.4" font-size="1.35" font-weight="bold">—</text>
+<line class="bxl" x1="360" y1="261.4" x2="360" y2="267.6"/>
+<text class="tx" x="361.4" y="263.6" font-size="1.1">APROBÓ</text>
+<text class="tx" x="361.4" y="266.4" font-size="1.35" font-weight="bold">—</text>
+<line class="bxl" x1="378" y1="261.4" x2="378" y2="267.6"/>
+<text class="tx" x="379.4" y="263.6" font-size="1.1">FECHA</text>
+<text class="tx" x="379.4" y="266.4" font-size="1.35" font-weight="bold">02/11/2026</text>
+<line class="bxl" x1="312" y1="267.6" x2="405" y2="267.6"/>
+<text class="tx" x="358.5" y="270.8" font-size="1.15" text-anchor="middle">SIMBOLOGÍA SEGÚN ISA-5.1 E ISO 10628-2 · SIS SEGÚN IEC 61511</text>
+<line class="bxl" x1="312" y1="273" x2="405" y2="273"/>
+<text class="tx" x="358.5" y="277" font-size="1.3" text-anchor="middle" font-weight="bold">CARTERA PROFESIONAL · luismacastilloa-bit.github.io</text></svg>
+      </div>
+      <div class="pidbar">
+        <button id="pidOut" title="Alejar" aria-label="Alejar">−</button><span class="pidzoom" id="pidZoom">100 %</span><button id="pidIn" title="Acercar" aria-label="Acercar">+</button><button id="pidFit">Hoja completa</button><button id="pidVessel">V-101</button>
+        <a href="DES-PID-001.pdf" target="_blank" rel="noopener">PDF A3 ↗</a>
+      </div>
+      <div class="pidhint">DES-PID-001 · Rev A · tocá un equipo o instrumento para ver su ficha</div>
+    </div>
     <div class="ficha" id="ficha" hidden></div>
+    </div>
   </section>
 
   <aside class="panel" id="panel">
@@ -446,7 +1793,7 @@ footer b{color:var(--fg)}
       feed: { bsw: 6, S: 45 },
       faults: { F1: false, F2: false, F3: false, F4: false, F5: false, F6: false, F7: false },
       P101: false, P201: false, XV101: false, heatOn: false, energize: false, divert: true,
-      washT: 0, ventT: 0, washRemoved: 0,
+      washT: 0, washDur: 0, ventT: 0, washRemoved: 0,
       qRamp: 0, qRampT: 0, Qfeed: 0, bswIn: 0.06, ppmEff: 0, Qdem: 0,
       TCV: 0, ticI: 0, mHot: 0, The: 30, Tv: 30, Thout: C.Thot, dutyMW: 0,
       Vw: M.segVol(1.10) - M.segVol(0.06), hi: 1.10, hiMeas: 1.10, hiFrozen: 0.95, LV: 0, licI: 0,
@@ -500,7 +1847,7 @@ footer b{color:var(--fg)}
       event(`Corregido: ${f.fix}`);
       if (id === 'F1' && (S.mode === 'RUN' || (S.mode === 'START' && S.seq && S.seq.i >= 1))) { S.P201 = true; event('P-201 rearrancada'); }
       if (id === 'F5') { S.ventT = 60; event('Venteo del domo en curso'); }
-      if (id === 'F6') { S.washT = Math.max(S.washT, washTime()); }
+      if (id === 'F6') { startWash(); }
       if (id === 'F7') event('Aislador reemplazado: resetear TR-101B');
     }
   }
@@ -549,7 +1896,7 @@ footer b{color:var(--fg)}
       val: () => `${fmt(S.Qfeed * 24, 0)} m³/d` },
     { n: 'Parada de P-201', d: '', enter() { S.P201 = false; }, done: t => t >= 3, val: () => '' },
     { n: 'Lavado de barros del fondo', d: 'Agua a presión por el cabezal inferior; los barros van al volquete',
-      enter() { S.washT = Math.max(S.washT, washTime()); }, done: t => t >= 20 && S.washT <= 0, val: () => `sólidos ${fmt(S.solids * 100, 0)} cm` },
+      enter() { startWash(); }, done: t => t >= 20 && S.washT <= 0, val: () => `sólidos ${fmt(S.solids * 100, 0)} cm` },
     { n: 'Recipiente bloqueado y presurizado', d: '', enter() {}, done: t => t >= 2, val: () => `P ${fmt(S.P, 1)} bar` }
   ];
 
@@ -592,7 +1939,8 @@ footer b{color:var(--fg)}
     event(msg.length ? 'Reset: ' + msg.join(' · ') : 'Reset: no hay disparos activos');
   }
   function washTime() { return 20 + Math.max(0, S.solids - 0.04) / 0.25 * 60; }
-  function mudWash() { S.washT = Math.max(S.washT, washTime()); event('Lavado de barros iniciado'); }
+  function startWash() { const w = washTime(); if (w > S.washT) { S.washT = w; S.washDur = w; } }
+  function mudWash() { startWash(); event('Lavado de barros iniciado'); }
 
   function tripGrid(side, why) {
     if (side === 'A' && !S.tripA) { S.tripA = true; S.tripWhyA = why; S.rampA = 0; event(`DISPARO TR-101A: ${why}`); }
@@ -607,12 +1955,12 @@ footer b{color:var(--fg)}
     { id: 'TRB', tag: 'TR-101B', pr: 1, c: () => S.tripB, txt: () => 'Disparo: ' + S.tripWhyB },
     { id: 'LSLL', tag: 'LSLL-101', pr: 1, c: () => S.LSLL, txt: () => 'Gas en el domo del recipiente' },
     { id: 'LAHH', tag: 'LT-101', pr: 1, c: () => S.hiMeas > 1.85, txt: () => 'Interfase muy alta (> 1,85 m): corte de alimentación' },
-    { id: 'TSLL', tag: 'TT-102', pr: 1, c: () => S.hold && S.holdWhy.startsWith('TSLL'), txt: () => 'Temperatura muy baja (< 40 °C): corte de alimentación' },
+    { id: 'TSLL', tag: 'TT-103', pr: 1, c: () => S.hold && S.holdWhy.startsWith('TSLL'), txt: () => 'Temperatura muy baja (< 40 °C): corte de alimentación' },
     { id: 'BSWHH', tag: 'AT-101', pr: 1, c: () => flowing() && S.AT101 > 1, txt: () => 'BS&W muy alto (> 1 %)' },
     { id: 'BSWH', tag: 'AT-101', pr: 2, c: () => flowing() && S.mode === 'RUN' && S.AT101 > 0.5, txt: () => 'BS&W de salida fuera de especificación (> 0,5 %)' },
     { id: 'SALT', tag: 'AY-101', pr: 2, c: () => flowing() && S.mode === 'RUN' && S.AY101 > 100, txt: () => 'Sales en crudo tratado altas (> 100 g/m³)' },
     { id: 'OIW', tag: 'AT-102', pr: 2, c: () => S.QLV > 0.2 && S.AT102 > 300, txt: () => 'Aceite en agua de salida alto (> 300 ppm)' },
-    { id: 'TAL', tag: 'TT-102', pr: 2, c: () => S.mode === 'RUN' && S.Tv < S.sp.T - 12, txt: () => 'Temperatura de tratamiento baja' },
+    { id: 'TAL', tag: 'TT-103', pr: 2, c: () => S.mode === 'RUN' && S.Tv < S.sp.T - 12, txt: () => 'Temperatura de tratamiento baja' },
     { id: 'LAH', tag: 'LT-101', pr: 2, c: () => S.hiMeas > 1.5 && S.hiMeas <= 1.85, txt: () => 'Interfase alta (> 1,50 m)' },
     { id: 'LAL', tag: 'LT-101', pr: 2, c: () => S.hiMeas < 0.7, txt: () => 'Interfase baja (< 0,70 m)' },
     { id: 'PAD', tag: 'LT-102', pr: 2, c: () => S.pad > 0.3, txt: () => 'Colchón de emulsión alto (> 0,30 m)' },
@@ -961,7 +2309,7 @@ footer b{color:var(--fg)}
       ],
       design: [['Servicio', '3,1 MW máx.'], ['UA', '30 kW/K'], ['Aceite térmico', '180 °C · 34 kg/s máx.'], ['Casco', 'Ø 0,9 × 5,4 m, 2 pasos por tubos'], ['Aislación', 'Lana mineral 50 mm + chapa de aluminio']]
     },
-    'TCV-101': { alias: 'E-101' }, 'TT-102': { alias: 'E-101' },
+    'TCV-101': { alias: 'E-101' }, 'TT-102': { alias: 'E-101' }, 'TT-103': { alias: 'V-101' },
     'P-101': {
       name: 'Bomba de alimentación', tag: 'P-101',
       desc: 'Bomba centrífuga que toma la emulsión del FWKO (separador de agua libre) y la empuja a través del calentador y del deshidratador.',
@@ -1057,12 +2405,67 @@ footer b{color:var(--fg)}
       design: [['Dimensiones', 'Ø 5 × 5 m · 98 m³'], ['Retorno', '30 m³/h a proceso']]
     },
     'EP-101': {
-      name: 'Tablero de control de rejillas', tag: 'EP-101',
-      desc: 'Contiene los contactores, la rampa de energización, los relés de sobrecorriente y el enclavamiento con LSLL-101. Los voltímetros del frente muestran la tensión en cada rejilla.',
-      why: 'Mirar la tensión y la corriente es la mejor forma de “ver” qué pasa adentro: si baja la tensión y sube la corriente, hay agua cerca de las rejillas.',
+      name: 'Estación de control local', tag: 'EP-101',
+      desc: 'Caja antideflagrante (Ex d) al pie del recipiente con un voltímetro y un amperímetro por transformador, un selector LOCAL / REMOTO y pulsadores de marcha, parada y parada de emergencia. No tiene PLC: sus señales viajan por cable hasta la sala eléctrica SE-101.',
+      why: 'Mirar la tensión y la corriente es la forma más rápida de “ver” qué pasa adentro: si la tensión baja y la corriente sube, hay agua cerca de las rejillas. Está en el área clasificada, por eso su envolvente es a prueba de explosión.',
       live: () => [['Rejilla A', S.tripA ? 'DISPARADA' : `${fmt(S.A.V, 1)} kV · ${fmt(S.A.I, 2)} A`, S.tripA], ['Rejilla B', S.tripB ? 'DISPARADA' : `${fmt(S.B.V, 1)} kV · ${fmt(S.B.I, 2)} A`, S.tripB],
-        ['Potencia eléctrica total', fmt(S.elecKW, 1) + ' kW']],
-      design: [['Alimentación', '400 V · 3 × 160 A'], ['Protección', 'IP55 · Zona 2 con presurización']]
+        ['Selector', 'REMOTO (opera la sala de control)']],
+      design: [['Envolvente', 'Ex d IIB T4, aluminio fundido'], ['Ubicación', 'Zona 2, sobre el skid'], ['Cableado', 'Multipar a JB-101 y de ahí a SE-101']]
+    },
+    'SE-101': {
+      name: 'Sala eléctrica y de control', tag: 'SE-101',
+      desc: 'Contenedor de 20 pies a unos 10 m del skid, fuera del área clasificada. Aloja el centro de control de motores (CCM-101), el PLC de control con su pantalla (UCP-101), el PLC de seguridad (SIS-101) y la UPS. Una bandeja de cables la une con las cajas de conexión del skid.',
+      why: 'Fuera del área clasificada los tableros, el PLC y la pantalla pueden ser equipos industriales comunes, sin certificación Ex: son más baratos y se mantienen con el equipo energizado. El aire acondicionado lo mantiene a 25 °C con 40 °C afuera.',
+      live: () => [['Potencia eléctrica del skid', fmt(S.elecKW, 1) + ' kW'], ['PLC de control', 'EN MARCHA'], ['PLC de seguridad', S.esd ? 'ESD ACTIVA' : 'Sin disparos', S.esd],
+        ['Comunicación con SCADA', 'Fibra óptica a la sala de control central']],
+      design: [['Dimensiones', '6,1 × 2,4 × 2,9 m (contenedor de 20 pies)'], ['Distancia al skid', '≈ 10 m, fuera de la Zona 2'], ['Climatización', '2 × 100 % equipos de 5 kW'], ['Alimentación', '400 V · 50 Hz desde la subestación']],
+      action: { label: 'Ver la pantalla del operador', fn: () => UI.setView && UI.setView('hmi') }
+    },
+    'UCP-101': {
+      name: 'PLC de control con pantalla local', tag: 'UCP-101',
+      desc: 'Ejecuta los lazos de control (interfase, presión, temperatura, caudal y dosificación), las secuencias de arranque, parada y lavado, la rampa de los transformadores, los cortes de alimentación y el desvío por BS&W. La pantalla táctil de la puerta muestra lo mismo que ve el operador en la sala de control central.',
+      why: 'Es el “cerebro” que decide en cada ciclo de 100 ms qué hace cada equipo. Si se cae, las válvulas van a su posición segura y el PLC de seguridad sigue protegiendo el equipo.',
+      live: () => [['Estado', 'RUN · ciclo 100 ms'], ['Secuencia', SIM.statusText()[0]], ['Lazos en automático', `${[S.heatOn, S.hiMeas >= 0.5, S.QoOut > 10, S.xvOpen].filter(Boolean).length} de 4`],
+        ['Alarmas activas', String(S.alarms.filter(a => a.active).length), S.alarms.some(a => a.active && a.pr === 1)]],
+      design: [['Señales', '≈ 55: 16 AI · 5 AO · 20 DI · 12 DO, + 25 % de reserva'], ['Pantalla', 'Táctil de 15" en la puerta'], ['Comunicación', 'Modbus TCP / EtherNet/IP al SCADA'], ['Respaldo', 'Fuente redundante y UPS de 30 min']],
+      action: { label: 'Ver la lógica del PLC', fn: () => UI.setView && UI.setView('plc') }
+    },
+    'SIS-101': {
+      name: 'PLC de seguridad', tag: 'SIS-101',
+      desc: 'Controlador separado del PLC de control, con sus propios sensores y salidas cableadas. Corta los transformadores si LSLL-101 detecta gas en el domo y hace la parada de emergencia por presión muy alta (PSHH-101) o por el pulsador ESD.',
+      why: 'Según IEC 61511 una función de seguridad no puede depender del mismo equipo que, al fallar, la provoca. Trabaja “desenergizar para disparar”: si se corta un cable, el equipo va a posición segura. En este skid el corte por interfase muy alta todavía usa LT-101, el transmisor del control; por eso la falla F2 lo deja sin protección.',
+      live: () => [['Gas en el domo (LSLL-101)', S.LSLL ? 'DETECTADO' : 'Normal', S.LSLL], ['Presión (PSHH-101 a 9 bar)', fmt(S.P, 2) + ' bar g', S.P > 9], ['Parada de emergencia', S.esd ? 'ACTIVA · ' + S.esdWhy : 'Sin disparo', S.esd],
+        ['Permiso a transformadores', S.LSLL ? 'CORTADO' : 'Habilitado', S.LSLL]],
+      design: [['Nivel de integridad', 'SIL 2 (a confirmar con LOPA)'], ['Certificación', 'IEC 61508'], ['Salidas', 'Cableadas a los contactores de TR-101A/B y a la solenoide de XV-101'], ['Prueba periódica', 'Cada 12 meses']]
+    },
+    'CCM-101': {
+      name: 'Centro de control de motores', tag: 'CCM-101',
+      desc: 'Tablero de baja tensión con los arrancadores y alimentadores del skid: arranque suave de P-101, variador de P-201, alimentación de los transformadores de rejilla y servicios de la sala.',
+      why: 'Cada cajón se puede sacar para mantenimiento sin cortar el resto. El PLC le da las órdenes de marcha y recibe el estado de cada motor.',
+      live: () => [['P-101', S.P101 ? `En marcha · ${fmt(S.pumpKW, 1)} kW` : 'Detenida'], ['P-201', S.P201 ? 'En marcha' : 'Detenida'], ['TR-101A / B (primario)', `${fmt(S.A.Ip, 0)} / ${fmt(S.B.Ip, 0)} A`]],
+      design: [['Tensión', '400 V · 50 Hz'], ['Barras', '630 A'], ['Construcción', 'Forma 3b, cajones extraíbles'], ['Arrancadores', 'Suave para P-101 (45 kW), variador para P-201']]
+    },
+    'UPS-101': {
+      name: 'Alimentación ininterrumpida', tag: 'UPS-101',
+      desc: 'Mantiene energizados el PLC, el PLC de seguridad, la pantalla y las comunicaciones si se corta la red.',
+      why: 'Sin UPS, un corte de luz dejaría a la planta sin control ni registro justo cuando más se necesita.',
+      live: () => [['Estado', 'En línea · baterías al 100 %']],
+      design: [['Potencia', '10 kVA'], ['Autonomía', '30 min'], ['Baterías', 'Plomo-ácido selladas']]
+    },
+    'JB-101': {
+      name: 'Cajas de conexión del skid', tag: 'JB-101 / JB-102',
+      desc: 'JB-101 junta los cables de instrumentos (los intrínsecamente seguros van en cable azul) y JB-102 los de control y señales de motores. De cada caja sale un cable multipar por la bandeja hasta la sala eléctrica.',
+      why: 'Concentrar las conexiones en el skid permite probarlo completo en el taller y en el campo solo conectar unos pocos cables.',
+      live: () => [['Ubicación', 'Borde del skid, Zona 2']],
+      design: [['Envolvente', 'Ex e (seguridad aumentada), acero inoxidable'], ['Bornes', '120 por caja'], ['Bandeja', 'Escalerilla de 300 mm a 3 m de altura']]
+    },
+    'JB-102': { alias: 'JB-101' },
+    'ZONA': {
+      name: 'Área clasificada (Zona 2)', tag: 'IEC 60079-10-1',
+      desc: 'Volumen alrededor del skid donde podría haber una atmósfera explosiva si una brida o un sello pierde. Todo equipo eléctrico adentro tiene que estar certificado para esa zona (Ex d, Ex e, Ex i).',
+      why: 'Por eso el PLC y la pantalla están en una sala eléctrica afuera: dentro de la zona solo quedan instrumentos, cajas de conexión y la estación local, todos certificados.',
+      live: () => [['Gas en el domo', S.LSLL ? 'Detectado' : 'No', S.LSLL]],
+      design: [['Extensión', '7,5 m alrededor del skid (ilustrativa)'], ['Grupo de gas', 'IIA'], ['Clase de temperatura', 'T3 o mejor'], ['Cómo se define', 'Estudio según IEC 60079-10-1 o API RP 505']]
     },
     'X-401': {
       name: 'Volquete de barros', tag: 'X-401',
@@ -1175,6 +2578,7 @@ footer b{color:var(--fg)}
         <li><b>Agua de entrada:</b> 45 % llega emulsionada; el resto cae libre a la fase agua por debajo del distribuidor.</li>
         <li><b>Eléctrico:</b> transformador con reactor serie modelado como impedancia; la carga crece con el agua entre rejillas y cuando la interfase o el colchón se acercan a la rejilla inferior.</li>
         <li><b>Calentador:</b> método ε-NTU con UA = 30 kW/K y aceite térmico a 180 °C.</li>
+        <li><b>Control:</b> PLC de control con pantalla local y PLC de seguridad separado, en una sala eléctrica fuera del área clasificada. En el skid quedan solo instrumentos, cajas de conexión Ex y una estación local.</li>
         <li><b>Presión de vapor:</b> 3,4 bar a a 70 °C (crudo sin estabilizar que viene del FWKO).</li>
       </ul>
       <div class="subh" style="margin-top:12px">Simplificaciones</div>
@@ -1182,6 +2586,7 @@ footer b{color:var(--fg)}
         <li>La dinámica de la interfase y del colchón está acelerada ×${SIM.KDYN} para que los escenarios se vean en minutos; los caudales y el balance son los reales.</li>
         <li>Los tiempos térmicos del recipiente están acortados (en la realidad tarda horas en calentarse por completo).</li>
         <li>Las sales se calculan como agua remanente × salinidad; no se modela el lavado con agua dulce de un desalador.</li>
+        <li>La extensión del área clasificada y la distancia a la sala eléctrica son ilustrativas: en un proyecto real salen del estudio de clasificación de áreas.</li>
         <li>Los analizadores responden con un retardo de 30 s. El reemplazo del aislador se simula sin detener el equipo.</li>
       </ul>
       <p class="note">Es un modelo para aprender y ejemplificar: tiene mejoras de diseño posibles y un equipo real se dimensiona con ensayos de botella, datos del crudo y la ingeniería del fabricante.</p>`;
@@ -1334,6 +2739,656 @@ footer b{color:var(--fg)}
 })(window);
 
 </script>
+<script>
+/* ============================================================
+   CTRL — programa del PLC en ladder, pantalla HMI y pestañas
+   ============================================================ */
+(function (G) {
+  'use strict';
+  const SIM = G.SIM, S = SIM.S, UI = G.UI, C = G.MODEL.C, fmt = SIM.fmt;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const val = x => typeof x === 'function' ? x() : x;
+  SIM.view = '3d';
+
+  // Pulsos de comandos del operador (botones del panel, de la HMI o de la estación local)
+  const CMD = { start: -1e9, stop: -1e9, reset: -1e9, esd: -1e9, mudWash: -1e9 };
+  for (const k of Object.keys(CMD)) {
+    const f = SIM[k];
+    SIM[k] = function () { CMD[k] = performance.now(); return f.apply(this, arguments); };
+  }
+  const pulse = k => performance.now() - CMD[k] < 1600;
+  const PASO = () => S.seq && S.seq.kind === 'start' ? S.seq.i + 1 : (S.mode === 'RUN' ? 8 : 0);
+  const PASO_PARADA = () => S.seq && S.seq.kind === 'stop' ? S.seq.i + 1 : 0;
+
+  /* =================== PROGRAMA DEL PLC (ladder en línea) =================== */
+  (function plc() {
+    const host = document.getElementById('plc');
+    const B = {
+      CMD_ARRANQUE: () => pulse('start'), CMD_PARADA: () => pulse('stop'), PB_RESET: () => pulse('reset'), PB_ESD: () => pulse('esd'), CMD_LAVADO: () => pulse('mudWash'),
+      PERMISIVOS_OK: () => S.P >= 3 && !S.LSLL && S.hiMeas >= 0.7 && S.hiMeas <= 1.5 && !S.esd,
+      SEC_EN_MARCHA: () => S.mode === 'START' || S.mode === 'RUN', PARADA_EN_CURSO: () => S.mode === 'STOPPING', EQUIPO_DETENIDO: () => S.mode === 'STOP' || S.mode === 'ESD',
+      ESD_ACTIVA: () => S.esd, LSLL101: () => S.LSLL, P201_FALLA: () => S.faults.F1,
+      P201_MARCHA: () => S.P201, P101_MARCHA: () => S.P101, XV101_ABIERTA: () => S.xvOpen, SERVICIO_CALOR: () => S.heatOn,
+      ORDEN_ENERGIZAR: () => S.energize, DISPARO_A: () => S.tripA, DISPARO_B: () => S.tripB,
+      TR101A_ON: () => S.energize && !S.tripA && !S.esd, TR101B_ON: () => S.energize && !S.tripB && !S.esd,
+      RELE_TIERRA_B: () => S.faults.F7, CORTE_ALIM: () => S.hold, MOTIVO_TEMP: () => S.hold && S.holdWhy.startsWith('TSLL'),
+      XV302_DESVIO: () => S.divert, XV301_ABIERTA: () => !S.divert && S.QoOut > 1, FLUJO_SALIDA: () => S.QoOut > 1,
+      P302_RETORNO: () => (S.ret302 || 0) > 0, LAVADO_BARROS: () => !!S.washing,
+      LSLL101_OK: () => !S.LSLL, PSHH101_OK: () => S.P < 9, SIS_PERMISO_TR: () => !S.LSLL, SIS_PERMISO_PROCESO: () => !S.esd,
+      SOL_XV101_SIS: () => !S.esd, PERMISO_P101_SIS: () => !S.esd
+    };
+    const A = {
+      PT101: [() => S.P, 'bar g', 2], LT101: [() => S.hiMeas, 'm', 2], TT102: [() => S.The, '°C', 1], TT103: [() => S.Tv, '°C', 1],
+      AT101: [() => S.AT101, '%', 2], II101A: [() => S.A.I, 'A', 2], II101B: [() => S.B.I, 'A', 2], FT101: [() => S.Qfeed * 24, 'm³/d', 0],
+      FT102: [() => S.QoOut * 24, 'm³/d', 0], LT302: [() => S.tk302 * 100, '%', 0], PASO: [PASO, '', 0], PASO_PARADA: [PASO_PARADA, '', 0]
+    };
+
+    const NO = (v, d) => ({ t: 'NO', v, d }), NC = (v, d) => ({ t: 'NC', v, d });
+    const CMP = (a, op, b, bl) => ({ t: 'CMP', a, op, b, bl });
+    const TON = (name, pt, et) => ({ t: 'TON', name, pt, et });
+    const PID = (name, pv, spv, out, u) => ({ t: 'PID', name, pv, spv, out, u });
+    const FB = (name, rows) => ({ t: 'FB', name, rows });
+    const OR = (...br) => ({ t: 'OR', br });
+    const OUT = v => ({ t: 'OUT', v }), SET = v => ({ t: 'SET', v }), RST = v => ({ t: 'RST', v });
+    const AO = (name, v, u) => ({ t: 'AO', name, v, u });
+    const R = (title, cm, inp, outs) => ({ title, cm, inp, outs });
+    const ARR = (n) => [NO('SEC_EN_MARCHA', ''), CMP('PASO', '≥', n)];
+    const PAR = (n) => [NO('PARADA_EN_CURSO', ''), CMP('PASO_PARADA', '<', n)];
+
+    const PROG = [
+      { sec: 'Permisivos y secuencia de arranque', rungs: [
+        R('Permisivos de arranque', 'Antes de arrancar: recipiente presurizado, sin gas en el domo, interfase en rango y sin parada de emergencia.',
+          [CMP('PT101', '≥', 3), NC('LSLL101', 'Gas en el domo'), CMP('LT101', '≥', 0.7), CMP('LT101', '≤', 1.5), NC('ESD_ACTIVA', 'Del SIS')], [OUT('PERMISIVOS_OK')]),
+        R('Marcha de la secuencia', 'Autorretención: el pulso de arranque la enclava y queda en marcha hasta una parada o una ESD.',
+          [OR([NO('CMD_ARRANQUE', 'Botón arrancar'), NO('PERMISIVOS_OK', '@PERMISIVOS_OK')], [NO('SEC_EN_MARCHA', 'Autorretención')]), NC('CMD_PARADA', 'Botón parar'), NC('ESD_ACTIVA', '')], [OUT('SEC_EN_MARCHA')]),
+        R('Dosificación de demulsificante P-201', 'Arranca en el paso 2, antes que el crudo, y sigue hasta el paso 5 de la parada. El relé térmico la saca si el motor falla.',
+          [OR(ARR(2), PAR(5)), NC('P201_FALLA', 'Térmico del motor')], [OUT('P201_MARCHA')]),
+        R('Bomba de alimentación P-101', 'Arranca en el paso 3 y para en el paso 4 de la parada.',
+          [OR(ARR(3), PAR(4))], [OUT('P101_MARCHA')]),
+        R('Válvula de entrada XV-101', 'Abre con la bomba en marcha. Cierra si hay un corte de alimentación o si el PLC de seguridad quita el permiso.',
+          [NO('P101_MARCHA', '@P101_MARCHA'), NC('CORTE_ALIM', '@CORTE_ALIM'), NO('SIS_PERMISO_PROCESO', 'Del SIS')], [OUT('XV101_ABIERTA')]),
+        R('Habilitación del calentamiento', 'El lazo de temperatura TIC-102 entra en servicio en el paso 4.',
+          [OR(ARR(4), PAR(3))], [OUT('SERVICIO_CALOR')]),
+        R('Orden de energizar las rejillas', 'En el paso 5, con el crudo caliente. Al parar se desenergiza primero.',
+          [OR(ARR(5), PAR(2))], [OUT('ORDEN_ENERGIZAR')])
+      ] },
+      { sec: 'Parada y lavado de barros', rungs: [
+        R('Parada en curso', 'El pulso de parada inicia la secuencia de 7 pasos, que se mantiene hasta que el equipo queda detenido.',
+          [OR([NO('CMD_PARADA', 'Botón parar')], [NO('PARADA_EN_CURSO', 'Autorretención')]), NC('EQUIPO_DETENIDO', '')], [OUT('PARADA_EN_CURSO')]),
+        R('Inicio del lavado de barros', 'En el paso 6 de la parada o a pedido del operador: abren las válvulas de agua de lavado y de drenaje.',
+          [OR([NO('PARADA_EN_CURSO', ''), CMP('PASO_PARADA', '≥', 6)], [NO('CMD_LAVADO', 'Botón lavado')])], [SET('LAVADO_BARROS')]),
+        R('Fin del lavado', 'El tiempo de lavado se calcula según los sólidos acumulados.',
+          [NO('LAVADO_BARROS', ''), TON('T_LAVADO', () => S.washDur || 0, () => (S.washDur || 0) - Math.max(0, S.washT))], [RST('LAVADO_BARROS')])
+      ] },
+      { sec: 'Transformadores de las rejillas', rungs: [
+        R('Contactor de TR-101A', 'Energiza con la orden de la red 7, sin disparo propio y con los dos permisos del PLC de seguridad cableados en serie.',
+          [NO('ORDEN_ENERGIZAR', '@ORDEN_ENERGIZAR'), NC('DISPARO_A', '@DISPARO_A'), NO('SIS_PERMISO_TR', 'Del SIS'), NO('SIS_PERMISO_PROCESO', 'Del SIS')], [OUT('TR101A_ON')]),
+        R('Contactor de TR-101B', 'Igual que la sección A.',
+          [NO('ORDEN_ENERGIZAR', '@ORDEN_ENERGIZAR'), NC('DISPARO_B', '@DISPARO_B'), NO('SIS_PERMISO_TR', 'Del SIS'), NO('SIS_PERMISO_PROCESO', 'Del SIS')], [OUT('TR101B_ON')]),
+        R('Disparo por sobrecorriente A', 'Si la corriente supera 2,5 A durante 5 s, hay agua puenteando las rejillas: se dispara y queda enclavado.',
+          [CMP('II101A', '>', C.Irated), TON('T_SOBRECORR_A', 5, () => S.ocA)], [SET('DISPARO_A')]),
+        R('Disparo por sobrecorriente B', 'Igual que A. Una falla a tierra en el aislador también lo hace actuar.',
+          [CMP('II101B', '>', C.Irated), TON('T_SOBRECORR_B', 5, () => S.ocB)], [SET('DISPARO_B')]),
+        R('Reset de TR-101A', 'Solo con la causa resuelta: sin gas en el domo.',
+          [NO('PB_RESET', 'Botón reset'), NO('LSLL101_OK', 'Sin gas')], [RST('DISPARO_A')]),
+        R('Reset de TR-101B', 'Además, el relé de falla a tierra tiene que estar normal.',
+          [NO('PB_RESET', 'Botón reset'), NO('LSLL101_OK', 'Sin gas'), NC('RELE_TIERRA_B', 'Falla a tierra')], [RST('DISPARO_B')])
+      ] },
+      { sec: 'Cortes de alimentación (HOLD)', rungs: [
+        R('Corte de alimentación', 'Interfase muy alta (LAHH) o crudo frío en el recipiente (TSLL): cierra XV-101 sin parar el resto.',
+          [NO('SEC_EN_MARCHA', ''), CMP('PASO', '≥', 6), OR([CMP('LT101', '>', 1.85, 'LAHH')], [CMP('TT103', '<', 40, 'TSLL')])], [SET('CORTE_ALIM')]),
+        R('Reanudar la alimentación', 'Se reanuda sola cuando la interfase bajó de 1,50 m y, si el corte fue por temperatura, el crudo volvió a calentarse.',
+          [NO('CORTE_ALIM', ''), CMP('LT101', '<', 1.5), OR([NC('MOTIVO_TEMP', 'Corte por TSLL')], [CMP('TT102', '>', 55), CMP('TT103', '>', 45)])], [RST('CORTE_ALIM')])
+      ] },
+      { sec: 'Calidad del crudo y tanques', rungs: [
+        R('Desvío a recuperación', 'Si el BS&W supera 1 % durante 20 s, XV-302 manda el crudo a TK-302.',
+          [NO('SEC_EN_MARCHA', ''), CMP('AT101', '>', 1.0), TON('T_BSW_ALTO', 20, () => S.divT)], [SET('XV302_DESVIO')]),
+        R('Vuelta a TK-301', 'Con 30 s por debajo de 0,5 %, vuelve a alinear el crudo al tanque de producto.',
+          [NO('SEC_EN_MARCHA', ''), CMP('AT101', '≤', 0.5), TON('T_BSW_OK', 30, () => S.okT)], [RST('XV302_DESVIO')]),
+        R('Válvula a producto XV-301', 'Abierta cuando hay producción y no hay desvío.',
+          [NC('XV302_DESVIO', '@XV302_DESVIO'), NO('FLUJO_SALIDA', '')], [OUT('XV301_ABIERTA')]),
+        R('Retorno de TK-302 a proceso', 'La bomba de recuperación arranca al 60 % del tanque…', [CMP('LT302', '>', 60)], [SET('P302_RETORNO')]),
+        R('Fin del retorno', '…y para al 30 %.', [CMP('LT302', '<', 30)], [RST('P302_RETORNO')])
+      ] },
+      { sec: 'Lazos de control', rungs: [
+        R('Temperatura TIC-102', 'Regula el aceite térmico (TCV-101) para que el crudo salga del calentador a la consigna.',
+          [NO('SERVICIO_CALOR', '@SERVICIO_CALOR'), PID('TIC_102', 'TT102', () => S.sp.T, () => S.TCV * 100, '%')], [AO('TCV101', () => S.TCV * 100, '%')]),
+        R('Interfase LIC-101', 'Abre LV-101 para sacar agua cuando la interfase sube.',
+          [CMP('LT101', '≥', 0.5), PID('LIC_101', 'LT101', () => S.sp.hi, () => S.LV * 100, '%')], [AO('LV101', () => S.LV * 100, '%')]),
+        R('Presión PIC-101', 'La contrapresión mantiene el recipiente lleno y por encima de la presión de vapor del crudo.',
+          [CMP('FT102', '≥', 240), PID('PIC_101', 'PT101', () => S.sp.P, () => S.PCV * 100, '%')], [AO('PCV101', () => S.PCV * 100, '%')]),
+        R('Caudal FIC-101', 'Sigue la rampa de arranque hasta la consigna de caudal.',
+          [NO('XV101_ABIERTA', '@XV101_ABIERTA'), PID('FIC_101', 'FT101', () => S.sp.Q * S.qRamp, () => (S.FCV || 0) * 100, '%')], [AO('FCV101', () => (S.FCV || 0) * 100, '%')]),
+        R('Dosis proporcional al caudal', 'La bomba P-201 inyecta la dosis en ppm multiplicada por el caudal de crudo.',
+          [NO('P201_MARCHA', '@P201_MARCHA'), FB('MUL FY_201', [() => `IN1 ${fmt(S.Qfeed, 1)} m³/h`, () => `IN2 ${fmt(S.sp.ppm, 0)} ppm`, () => `OUT ${fmt(S.Qdem, 2)} L/h`])], [AO('SC201', () => S.Qdem, 'L/h')])
+      ] },
+      { sec: 'PLC de seguridad SIS-101 · programa aparte', sis: true,
+        note: 'Corre en otro controlador con sus propios sensores. Trabaja “desenergizar para disparar”: la bobina en 1 es el estado sano, y un cable cortado lleva el equipo a posición segura. El corte por interfase muy alta todavía está en el PLC de control y usa LT-101; un diseño según IEC 61511 lo pasaría acá con un transmisor propio (mirá la falla F2).',
+        rungs: [
+        R('Permiso a los transformadores', 'El contacto de LSLL-101 está cerrado mientras hay líquido. Si aparece gas en el domo, abre y corta los dos contactores.',
+          [NO('LSLL101_OK', 'Líquido en el domo')], [OUT('SIS_PERMISO_TR')]),
+        R('Permiso de proceso (ESD)', 'Se pierde por presión muy alta (9 bar g) o por el pulsador de emergencia, y solo vuelve con reset.',
+          [OR([NO('PB_RESET', 'Botón reset')], [NO('SIS_PERMISO_PROCESO', 'Autorretención')]), NO('PSHH101_OK', 'P < 9 bar g'), NC('PB_ESD', 'Pulsador ESD')], [OUT('SIS_PERMISO_PROCESO')]),
+        R('Salidas cableadas', 'Sin permiso, se desenergiza la solenoide de XV-101 y se corta el arrancador de P-101, aunque el PLC de control pida lo contrario.',
+          [NO('SIS_PERMISO_PROCESO', '@SIS_PERMISO_PROCESO')], [OUT('SOL_XV101_SIS'), OUT('PERMISO_P101_SIS')])
+      ] }
+    ];
+    let n = 1, nS = 1; const WR = {};
+    for (const s of PROG) for (const r of s.rungs) { r.n = s.sis ? 'S' + nS++ : n++; for (const o of r.outs) if ((o.t === 'OUT' || o.t === 'SET') && !(o.v in WR)) WR[o.v] = r.n; }
+    const fixD = nd => { if (Array.isArray(nd)) nd.forEach(fixD); else if (nd.t === 'OR') nd.br.forEach(fixD); else if (nd.d && nd.d[0] === '@') nd.d = 'Red ' + WR[nd.d.slice(1)]; };
+    for (const s of PROG) for (const r of s.rungs) fixD(r.inp);
+
+    const BO = 34;
+    const SIZE = { NO: [132, 66], NC: [132, 66], CMP: [150, 70], TON: [150, 74], PID: [200, 96], FB: [170, 80], OUT: [150, 66], SET: [150, 66], RST: [150, 66], AO: [160, 66] };
+    function measure(node) {
+      if (Array.isArray(node)) { let w = 0, h = 0; for (const e of node) { const m = measure(e); w += m.w; h = Math.max(h, m.h); } return { w, h }; }
+      if (node.t === 'OR') { let w = 0, h = 0; for (const b of node.br) { const m = measure(b); w = Math.max(w, m.w); h += m.h; } return { w: w + 20, h }; }
+      const s = SIZE[node.t]; return { w: s[0], h: s[1] };
+    }
+    const wire = (x1, y1, x2, y2, on) => `<line class="w${on ? ' on' : ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    function draw(node, x, y, fin) {
+      if (Array.isArray(node)) {
+        let s = '', f = fin, cx = x;
+        for (const e of node) { const [p, fo] = draw(e, cx, y, f); s += p; cx += measure(e).w; f = fo; }
+        return [s, f];
+      }
+      const yb = y + BO, w = measure(node).w;
+      if (node.t === 'OR') {
+        let s = '', yy = y, any = false, last = yb;
+        const W = w - 20;
+        for (const b of node.br) {
+          const m = measure(b);
+          const [p, fo] = draw(b, x + 10, yy, fin);
+          s += wire(x, yy + BO, x + 10, yy + BO, fin) + p + wire(x + 10 + m.w, yy + BO, x + 10 + W, yy + BO, fo) + wire(x + 10 + W, yy + BO, x + w, yy + BO, fo);
+          any = any || fo; last = yy + BO; yy += m.h;
+        }
+        s += wire(x, yb, x, last, fin) + wire(x + w, yb, x + w, last, any);
+        return [s, any];
+      }
+      let s = '', fo = false;
+      if (node.t === 'NO' || node.t === 'NC') {
+        const v = !!B[node.v](), closed = node.t === 'NO' ? v : !v;
+        fo = fin && closed;
+        const cx = x + w / 2;
+        s += wire(x, yb, cx - 7, yb, fin) + wire(cx + 7, yb, x + w, yb, fo);
+        s += `<rect class="cg${v ? ' tv' : ''}" x="${cx - 7}" y="${yb - 12}" width="14" height="24"/>`;
+        s += `<line class="cb${fin ? ' on' : ''}" x1="${cx - 7}" y1="${yb - 13}" x2="${cx - 7}" y2="${yb + 13}"/><line class="cb${fo ? ' on' : ''}" x1="${cx + 7}" y1="${yb - 13}" x2="${cx + 7}" y2="${yb + 13}"/>`;
+        if (node.t === 'NC') s += `<line class="cb${fo ? ' on' : ''}" x1="${cx - 10}" y1="${yb + 11}" x2="${cx + 10}" y2="${yb - 11}"/>`;
+        s += `<text class="vn${v ? ' tv' : ''}" x="${cx}" y="${yb - 19}" text-anchor="middle">${esc(node.v)}</text>`;
+        if (node.d) s += `<text class="vd" x="${cx}" y="${yb + 27}" text-anchor="middle">${esc(node.d)}</text>`;
+        return [s, fo];
+      }
+      const bx = x + 14, bw = w - 28, by = yb - 26;
+      if (node.t === 'CMP') {
+        const [fa, u, dg] = A[node.a], a = fa(), b = val(node.b);
+        const c = { '>': a > b, '<': a < b, '≥': a >= b, '≤': a <= b }[node.op];
+        fo = fin && c;
+        s += wire(x, yb, bx, yb, fin) + wire(bx + bw, yb, x + w, yb, fo);
+        s += `<rect class="box${c ? ' tv' : ''}" x="${bx}" y="${by}" width="${bw}" height="52" rx="3"/>`;
+        s += `<text class="bt" x="${bx + bw / 2}" y="${by + 14}" text-anchor="middle">${esc(node.a)} ${node.op}</text>`;
+        s += `<text class="bv" x="${bx + 6}" y="${by + 30}">IN1 ${fmt(a, dg)} ${esc(u)}</text>`;
+        s += `<text class="bv" x="${bx + 6}" y="${by + 45}">IN2 ${fmt(b, dg)}${node.bl ? ' · ' + esc(node.bl) : ''}</text>`;
+        return [s, fo];
+      }
+      if (node.t === 'TON') {
+        const pt = Math.max(0.001, val(node.pt)), et = fin ? Math.max(0, Math.min(pt, node.et())) : 0, q = fin && et >= pt - 1e-6 && val(node.pt) > 0;
+        fo = q;
+        s += wire(x, yb, bx, yb, fin) + wire(bx + bw, yb, x + w, yb, fo);
+        s += `<rect class="box${fin ? ' tv' : ''}" x="${bx}" y="${by}" width="${bw}" height="58" rx="3"/>`;
+        s += `<text class="bt" x="${bx + bw / 2}" y="${by + 14}" text-anchor="middle">TON ${esc(node.name)}</text>`;
+        s += `<text class="bv" x="${bx + 6}" y="${by + 30}">PT ${fmt(val(node.pt), 0)} s</text><text class="bv" x="${bx + 6}" y="${by + 45}">ET ${fmt(et, 0)} s</text>`;
+        s += `<rect class="pbar" x="${bx + 6}" y="${by + 50}" width="${bw - 12}" height="4"/><rect class="pfill" x="${bx + 6}" y="${by + 50}" width="${(bw - 12) * et / pt}" height="4"/>`;
+        return [s, fo];
+      }
+      if (node.t === 'PID') {
+        const [fa, u, dg] = A[node.pv];
+        fo = fin;
+        s += wire(x, yb, bx, yb, fin) + wire(bx + bw, yb, x + w, yb, fo);
+        s += `<rect class="box${fin ? ' tv' : ''}" x="${bx}" y="${by}" width="${bw}" height="80" rx="3"/>`;
+        s += `<text class="bt" x="${bx + bw / 2}" y="${by + 14}" text-anchor="middle">PID ${esc(node.name)} · ${fin ? 'AUTO' : 'INACTIVO'}</text>`;
+        s += `<text class="bv" x="${bx + 6}" y="${by + 32}">PV ${esc(node.pv)}  ${fmt(fa(), dg)} ${esc(u)}</text>`;
+        s += `<text class="bv" x="${bx + 6}" y="${by + 48}">SP ${fmt(val(node.spv), dg)} ${esc(u)}</text>`;
+        s += `<text class="bv" x="${bx + 6}" y="${by + 64}">OUT ${fmt(val(node.out), 1)} ${esc(node.u)}</text>`;
+        return [s, fo];
+      }
+      if (node.t === 'FB') {
+        fo = fin;
+        s += wire(x, yb, bx, yb, fin) + wire(bx + bw, yb, x + w, yb, fo);
+        s += `<rect class="box${fin ? ' tv' : ''}" x="${bx}" y="${by}" width="${bw}" height="64" rx="3"/>`;
+        s += `<text class="bt" x="${bx + bw / 2}" y="${by + 14}" text-anchor="middle">${esc(node.name)}</text>`;
+        node.rows.forEach((r, i) => { s += `<text class="bv" x="${bx + 6}" y="${by + 30 + i * 15}">${esc(r())}</text>`; });
+        return [s, fo];
+      }
+      return ['', fin];
+    }
+    function drawOut(o, x, yb, on) {
+      const w = SIZE[o.t][0], cx = x + w / 2;
+      if (o.t === 'AO') return `<rect class="box${on ? ' tv' : ''}" x="${x + 10}" y="${yb - 18}" width="${w - 20}" height="36" rx="3"/><text class="bt" x="${cx}" y="${yb - 3}" text-anchor="middle">${esc(o.name)}</text><text class="bv" x="${cx}" y="${yb + 12}" text-anchor="middle">${fmt(o.v(), 1)} ${esc(o.u)}</text>`;
+      const v = !!B[o.v](), letter = o.t === 'SET' ? 'S' : o.t === 'RST' ? 'R' : '';
+      return `<path class="coil${v ? ' tv' : ''}${on ? ' on' : ''}" d="M${cx - 6} ${yb - 13} A 14 14 0 0 0 ${cx - 6} ${yb + 13} M${cx + 6} ${yb - 13} A 14 14 0 0 1 ${cx + 6} ${yb + 13}"/>` +
+        (letter ? `<text class="cl" x="${cx}" y="${yb + 4}" text-anchor="middle">${letter}</text>` : '') +
+        `<text class="vn${v ? ' tv' : ''}" x="${cx}" y="${yb - 19}" text-anchor="middle">${esc(o.v)}</text>` +
+        `<text class="vd" x="${cx}" y="${yb + 27}" text-anchor="middle">${v ? '= 1' : '= 0'}</text>`;
+    }
+    let WMAX = 0;
+    for (const s of PROG) for (const r of s.rungs) WMAX = Math.max(WMAX, measure(r.inp).w + Math.max(...r.outs.map(o => SIZE[o.t][0])) + 90);
+    WMAX = Math.max(WMAX, 980);
+    function rungSVG(r) {
+      const mi = measure(r.inp), oh = r.outs.length * 66, H = Math.max(mi.h, oh);
+      const top = 44, x0 = 30, xr = WMAX - 16;
+      const [body, res] = draw(r.inp, x0, top, true);
+      const xo = xr - Math.max(...r.outs.map(o => SIZE[o.t][0])) - 20;
+      let s = `<rect class="rail on" x="${x0 - 6}" y="${top}" width="5" height="${H}"/><rect class="rail" x="${xr}" y="${top}" width="5" height="${H}"/>`;
+      s += `<text class="rt" x="${x0 - 6}" y="16">Red ${r.n} · ${esc(r.title)}</text><text class="rc" x="${x0 - 6}" y="33">${esc(r.cm)}</text>`;
+      s += body + wire(x0 + mi.w, top + BO, xo, top + BO, res);
+      r.outs.forEach((o, i) => {
+        const yb = top + BO + i * 66, w = SIZE[o.t][0];
+        if (i > 0) s += wire(xo, top + BO, xo, yb, res);
+        s += drawOut(o, xo, yb, res) + wire(xo + w, yb, xr, yb, res) + wire(xo, yb, xo + 10, yb, res);
+      });
+      return `<svg class="rung" viewBox="0 0 ${WMAX + 10} ${top + H + 10}" width="${WMAX + 10}" height="${top + H + 10}" role="img" aria-label="Red ${r.n}: ${esc(r.title)}">${s}</svg>`;
+    }
+    host.innerHTML = `<div class="plc-head"><div><b>UCP-101 · Programa principal</b> <span>(ladder, modo online)</span></div>
+      <div class="plc-leg"><span><i class="lg on"></i>energizado</span><span><i class="lg"></i>sin energía</span><span><i class="lg tv"></i>variable en 1</span></div></div>
+      <p class="plc-note">Así ve el programa quien hace la automatización, conectado al PLC de la sala eléctrica: cada red se lee de izquierda a derecha y, si hay un camino cerrado, la bobina de la derecha se energiza. Probá un “¿Qué pasa si…?” y mirá qué contactos cambian.</p>
+      <div id="plcBody"></div>`;
+    const body = document.getElementById('plcBody');
+    function render() {
+      body.innerHTML = PROG.map(s => `<section class="pou${s.sis ? ' sis' : ''}"><h3>${esc(s.sec)}</h3>${s.note ? `<p class="snote">${esc(s.note)}</p>` : ''}${s.rungs.map(rungSVG).join('')}</section>`).join('');
+    }
+    let acc = 0;
+    SIM.onFrame.push(dt => { if (SIM.view !== 'plc') return; acc += dt; if (acc < 0.3) return; acc = 0; render(); });
+    SIM.renderPLC = render;
+  })();
+
+  /* =================== PANTALLA DEL OPERADOR (estilo ISA-101) =================== */
+  (function hmi() {
+    const host = document.getElementById('hmi');
+    const T0 = Date.UTC(2026, 10, 2, 9, 0, 0);
+    // Recipiente: x 430–770, y 180–400 (3,6 m → 220 px)
+    const VX0 = 430, VX1 = 770, VY0 = 180, VY1 = 400, PXM = (VY1 - VY0) / (2 * C.R);
+    const yOf = h => VY1 - h * PXM;
+
+    const line = (id, pts, cls = '') => `<polyline id="hl_${id}" class="hl ${cls}" points="${pts.map(p => p.join(',')).join(' ')}"/>`;
+    const tag = (x, y, t, anchor = 'middle') => `<text class="ht" x="${x}" y="${y}" text-anchor="${anchor}">${t}</text>`;
+    const sub = (x, y, t, anchor = 'middle', id = '') => `<text class="hs" x="${x}" y="${y}" text-anchor="${anchor}"${id ? ` id="${id}"` : ''}>${t}</text>`;
+    const vbox = (id, x, y, w = 92, anchor = 'middle') => {
+      const x0 = anchor === 'middle' ? x - w / 2 : anchor === 'end' ? x - w : x;
+      return `<rect class="hvb" x="${x0}" y="${y - 13}" width="${w}" height="18" rx="2"/><text id="hv_${id}" class="hv" x="${x0 + w - 5}" y="${y}" text-anchor="end">—</text>`;
+    };
+    const alm = (id, x, y) => `<g id="ha_${id}" class="hal" visibility="hidden"><rect x="${x - 9}" y="${y - 9}" width="18" height="18" rx="3"/><text x="${x}" y="${y + 4}" text-anchor="middle">1</text></g>`;
+    const grp = (t, body) => `<g class="hq" data-tag="${t}">${body}</g>`;
+    const pump = (id, t, cx, cy, r = 15) => grp(t, `<circle id="he_${id}" class="he" cx="${cx}" cy="${cy}" r="${r}"/><path class="hpt" d="M${cx - r * 0.45} ${cy - r * 0.55} L${cx + r * 0.6} ${cy} L${cx - r * 0.45} ${cy + r * 0.55}Z"/>`);
+    const valveH = (id, t, cx, cy, act = '') => grp(t, `<path id="he_${id}" class="he" d="M${cx - 11} ${cy - 8} L${cx + 11} ${cy + 8} L${cx + 11} ${cy - 8} L${cx - 11} ${cy + 8}Z"/>` + (act === 'xv' ? `<line class="hd" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - 16}"/><rect class="hact" x="${cx - 8}" y="${cy - 26}" width="16" height="10"/>` : act === 'cv' ? `<line class="hd" x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - 15}"/><path class="hact" d="M${cx - 12} ${cy - 15} A 12 9 0 0 1 ${cx + 12} ${cy - 15} Z"/>` : ''));
+    const valveV = (id, t, cx, cy, act = '') => grp(t, `<path id="he_${id}" class="he" d="M${cx - 8} ${cy - 11} L${cx + 8} ${cy + 11} L${cx - 8} ${cy + 11} L${cx + 8} ${cy - 11}Z"/>` + (act === 'cv' ? `<line class="hd" x1="${cx}" y1="${cy}" x2="${cx + 15}" y2="${cy}"/><path class="hact" d="M${cx + 15} ${cy - 12} A 9 12 0 0 1 ${cx + 15} ${cy + 12} Z"/>` : ''));
+    const inst = (t, cx, cy, txt, stem) => grp(t, (stem ? `<line class="hd" x1="${cx}" y1="${cy + 13}" x2="${cx}" y2="${stem}"/>` : '') + `<circle class="hin" cx="${cx}" cy="${cy}" r="13"/><text class="hit" x="${cx}" y="${cy + 4}" text-anchor="middle">${txt}</text>`);
+    const tankS = (id, t, x, y, w, h) => grp(t, `<rect class="he tk" x="${x}" y="${y}" width="${w}" height="${h}" rx="5"/><rect id="hlv_${id}" class="hlv" x="${x + 3}" y="${y + h - 3}" width="${w - 6}" height="0"/><text id="hlt_${id}" class="hv" x="${x + w / 2}" y="${y + h / 2 + 5}" text-anchor="middle">—</text>`);
+    const trafo = (id, t, cx, cy) => grp(t, `<circle id="he_${id}" class="he" cx="${cx}" cy="${cy - 7}" r="11"/><circle class="he" cx="${cx}" cy="${cy + 7}" r="11" fill-opacity="0.6"/>`);
+
+    const KPI = [
+      { id: 'bsw', lab: 'BS&W AT-101', u: '%', dg: 2, min: 0, max: 3, n: [0, 0.5], lim: [[0.5, 'H'], [1, 'HH']], v: () => S.Qfeed > 0.5 ? S.AT101 : null },
+      { id: 'salt', lab: 'Sales AY-101', u: 'g/m³', dg: 0, min: 0, max: 300, n: [0, 100], lim: [[100, 'H']], v: () => S.Qfeed > 0.5 ? S.AY101 : null },
+      { id: 'oiw', lab: 'Aceite en agua AT-102', u: 'ppm', dg: 0, min: 0, max: 1000, n: [0, 300], lim: [[300, 'H']], v: () => S.QLV > 0.2 ? S.AT102 : null },
+      { id: 'temp', lab: 'Temperatura TT-103', u: '°C', dg: 1, min: 20, max: 90, n: [() => S.sp.T - 5, () => S.sp.T + 5], lim: [[() => S.sp.T - 12, 'L'], [40, 'LL']], v: () => S.Tv },
+      { id: 'hi', lab: 'Interfase LT-101', u: 'm', dg: 2, min: 0, max: 2.4, n: [0.9, 1.3], lim: [[0.7, 'L'], [1.5, 'H'], [1.85, 'HH']], v: () => S.hiMeas },
+      { id: 'p', lab: 'Presión PT-101', u: 'bar g', dg: 2, min: 0, max: 10, n: [4.5, 7], lim: [[3.5, 'L'], [9, 'HH']], v: () => S.P },
+      { id: 'kva', lab: 'Rejilla A EI-101A', u: 'kV', dg: 1, min: 0, max: 22, n: [16, 21], lim: [[14, 'L']], v: () => S.A.V },
+      { id: 'kvb', lab: 'Rejilla B EI-101B', u: 'kV', dg: 1, min: 0, max: 22, n: [16, 21], lim: [[14, 'L']], v: () => S.B.V }
+    ];
+    const KX = 966, KW = 290;
+    const kx = (k, v) => KX + KW * Math.max(0, Math.min(1, (v - k.min) / (k.max - k.min)));
+    const kpiSVG = KPI.map((k, i) => {
+      const y = 100 + i * 50;
+      return `<text class="hk" x="${KX}" y="${y}">${k.lab}</text><text id="hk_${k.id}" class="hkv" x="${KX + KW}" y="${y}" text-anchor="end">—</text>
+        <rect class="hkb" x="${KX}" y="${y + 10}" width="${KW}" height="10"/><rect id="hkn_${k.id}" class="hkn" x="${KX}" y="${y + 10}" width="0" height="10"/>
+        <g id="hkl_${k.id}"></g>
+        <path id="hkp_${k.id}" class="hkp" data-y="${y + 10}" d="M0 0 L-6 -9 L6 -9Z" transform="translate(${KX},${y + 10})"/>`;
+    }).join('');
+    const btn = (id, x, y, w, t, cls = '') => `<g id="hb_${id}" class="hbtn ${cls}"><rect x="${x}" y="${y}" width="${w}" height="32" rx="3"/><text x="${x + w / 2}" y="${y + 21}" text-anchor="middle">${t}</text></g>`;
+
+    const yI = yOf(C.yInlet), yG1 = yOf(C.yGrid1), yG2 = yOf(C.yGrid2);
+    const svg = `<svg id="hmiSvg" class="hmi" viewBox="0 0 1280 760" role="img" aria-label="Pantalla HMI del deshidratador">
+      <defs><clipPath id="hvclip"><rect x="${VX0}" y="${VY0}" width="${VX1 - VX0}" height="${VY1 - VY0}" rx="70" ry="110"/></clipPath></defs>
+      <rect width="1280" height="760" class="hbg"/>
+      <rect width="1280" height="46" class="htop"/>
+      <text class="htt" x="16" y="29">DESHIDRATADOR V-101 · RESUMEN</text>
+      <rect id="hst_r" class="hstate" x="372" y="10" width="230" height="26" rx="3"/><text id="hst" class="hstt" x="487" y="28" text-anchor="middle">DETENIDO</text>
+      <text id="hclk" class="htt2" x="626" y="29">—</text>
+      <text class="htt2" x="840" y="29">UCP-101 · Modo REMOTO · AUTO</text>
+      <g id="hcnt"></g>
+      <rect class="hpanel" x="10" y="56" width="930" height="550"/>
+      <rect class="hpanel" x="950" y="56" width="320" height="550"/>
+      <rect class="hpanel" x="10" y="616" width="1260" height="136"/>
+      <text class="hsec" x="22" y="78">PROCESO</text>
+      <rect class="hzone" x="312" y="62" width="538" height="472" rx="4"/><text class="hs" x="318" y="527">Skid SK-100 · área clasificada Zona 2</text>
+      <text id="hmsg" class="hmsg" x="22" y="597">—</text>
+      <text class="hsec" x="962" y="78">INDICADORES CLAVE</text>
+
+      ${line('in', [[24, 420], [64, 420]])}
+      ${line('feed', [[96, 420], [190, 420]])}
+      ${line('dem', [[150, 461], [150, 420]])}
+      ${line('demsuc', [[150, 496], [150, 483]])}
+      ${line('hot', [[205, 540], [205, 434]])}
+      ${line('hotret', [[255, 434], [255, 540]])}
+      ${line('heated', [[270, 420], [392, 420], [392, yI], [VX0 + 4, yI]])}
+      ${line('oil', [[740, 200], [740, 120], [865, 120]])}
+      ${line('to301', [[865, 120], [905, 120], [905, 186]])}
+      ${line('to302', [[865, 120], [865, 325], [878, 325]])}
+      ${line('water', [[700, VY1 - 4], [700, 470], [935, 470]])}
+      ${line('trA', [[505, 148], [505, VY0 + 2]], 'el')}
+      ${line('trB', [[615, 148], [615, VY0 + 2]], 'el')}
+
+      ${sub(24, 412, 'Desde FWKO', 'start')}
+      ${pump('p101', 'P-101', 80, 420)}${tag(80, 392, 'P-101')}${vbox('p101', 80, 456, 70)}${alm('p101', 100, 386)}
+      ${pump('p201', 'P-201', 150, 472, 11)}${grp('TK-201', `<rect class="he tk" x="130" y="496" width="40" height="40" rx="4"/><rect id="hlv_tk201" class="hlv" x="133" y="533" width="34" height="0"/>`)}${tag(150, 552, 'P-201 · químico')}${vbox('p201', 150, 572, 84)}${alm('p201', 172, 460)}
+      ${grp('E-101', `<rect id="he_e101" class="he" x="190" y="405" width="80" height="30" rx="4"/><path class="hd" d="M197 420 L210 410 L223 430 L236 410 L249 430 L262 410 L266 420"/>`)}${tag(230, 396, 'E-101')}${alm('e101', 280, 396)}
+      ${valveV('tcv', 'TCV-101', 205, 490, 'cv')}${tag(262, 486, 'TCV-101', 'start')}${vbox('tcv', 262, 506, 54, 'start')}${sub(230, 560, 'Aceite térmico')}
+      ${inst('TT-102', 296, 372, 'TT', 420)}${vbox('tt102', 296, 350, 84)}
+      ${valveH('xv101', 'XV-101', 326, 420, 'xv')}${tag(326, 452, 'XV-101')}${sub(326, 468, '—', 'middle', 'hv_xv101s')}
+      ${inst('FCV-101', 358, 372, 'FT', 420)}${vbox('ft101', 358, 336, 100)}
+      ${valveV('fcv', 'FCV-101', 392, 364, 'cv')}${tag(382, 400, 'FCV-101', 'end')}
+
+      ${grp('V-101', `<rect class="hvs" x="${VX0}" y="${VY0}" width="${VX1 - VX0}" height="${VY1 - VY0}" rx="70" ry="110"/>`)}
+      <g clip-path="url(#hvclip)" pointer-events="none">
+        <rect class="hoil" x="${VX0}" y="${VY0}" width="${VX1 - VX0}" height="${VY1 - VY0}"/>
+        <rect id="hv_gas" class="hgas" x="${VX0}" y="${VY0}" width="${VX1 - VX0}" height="0"/>
+        <rect id="hv_pad" class="hpad" x="${VX0}" y="${VY1}" width="${VX1 - VX0}" height="0"/>
+        <rect id="hv_w" class="hw" x="${VX0}" y="${VY1}" width="${VX1 - VX0}" height="0"/>
+        <rect id="hv_sol" class="hsol" x="${VX0}" y="${VY1}" width="${VX1 - VX0}" height="0"/>
+        <line class="hgrid" x1="${VX0 + 40}" y1="${yG1}" x2="${VX1 - 40}" y2="${yG1}"/>
+        <line class="hgrid" x1="${VX0 + 40}" y1="${yG2}" x2="${VX1 - 40}" y2="${yG2}"/>
+        <line id="hv_sp" class="hsp" x1="${VX0 + 8}" x2="${VX0 + 34}" y1="0" y2="0"/>
+      </g>
+      ${grp('V-101', `<rect class="hvs" x="${VX0}" y="${VY0}" width="${VX1 - VX0}" height="${VY1 - VY0}" rx="70" ry="110" fill="none" pointer-events="stroke"/>`)}
+      <text class="hxt" x="${(VX0 + VX1) / 2}" y="${VY0 + 30}" text-anchor="middle">V-101</text>
+      <text class="hxt s" x="${(VX0 + VX1) / 2}" y="${VY0 + 44}" text-anchor="middle">DESHIDRATADOR</text>
+      ${sub(VX1 - 46, yG2 - 4, 'Rejillas', 'end')}
+      ${alm('v101', VX0 + 18, VY0 + 22)}
+      ${vbox('hi', 560, 438, 140)}${vbox('padv', 560, 458, 140)}${vbox('vt', 560, 478, 140)}
+      ${inst('LT-101', 412, 240, 'LT')}${vbox('lt101', 412, 214, 64)}${alm('lt101', 430, 252)}
+      ${trafo('tra', 'TR-101A', 505, 132)}${tag(523, 112, 'TR-101A', 'start')}${vbox('tra', 523, 136, 76, 'start')}${vbox('tra2', 523, 156, 76, 'start')}${alm('tra', 490, 106)}
+      ${trafo('trb', 'TR-101B', 615, 132)}${tag(633, 112, 'TR-101B', 'start')}${vbox('trb', 633, 136, 64, 'start')}${vbox('trb2', 633, 156, 64, 'start')}${alm('trb', 600, 106)}
+      ${inst('LSLL-101', 455, 150, 'LS', 196)}${vbox('lsll', 455, 124, 56)}${alm('lsll', 474, 138)}
+      ${inst('PCV-101', 762, 92, 'PT', 120)}${vbox('pt101', 750, 72, 66, 'end')}
+      ${inst('AT-101', 796, 92, 'AT', 120)}${vbox('at101', 811, 72, 96, 'start')}${alm('at101', 812, 104)}
+      ${valveH('pcv', 'PCV-101', 835, 120, 'cv')}${tag(835, 144, 'PCV-101')}
+      ${valveV('xv301', 'XV-301', 905, 158, '')}
+      ${valveV('xv302', 'XV-302', 865, 250, '')}
+      ${tankS('tk301', 'TK-301', 878, 186, 52, 84)}${tag(904, 284, 'TK-301')}
+      ${tankS('tk302', 'TK-302', 878, 300, 52, 60)}${tag(904, 374, 'TK-302')}${alm('tk302', 930, 296)}
+      ${valveH('lv101', 'LV-101', 760, 470, 'cv')}${tag(760, 496, 'LV-101')}${vbox('lv101', 760, 516, 100)}
+      ${inst('AT-102', 830, 434, 'AT', 470)}${vbox('at102', 830, 410, 96)}${alm('at102', 850, 420)}
+      ${sub(935, 462, 'A PIA', 'end')}
+      ${sub(835, 160, '', 'middle', 'hv_dest')}
+
+      ${kpiSVG}
+      ${btn('start', 962, 508, 146, 'ARRANCAR')}${btn('stop', 1118, 508, 146, 'PARAR')}
+      ${btn('reset', 962, 546, 146, 'RESET')}${btn('ack', 1118, 546, 146, 'RECONOCER')}
+
+      <text class="hsec" x="22" y="638">ALARMAS ACTIVAS</text>
+      <text class="hcol" x="22" y="658">PRIOR.</text><text class="hcol" x="90" y="658">HORA</text><text class="hcol" x="190" y="658">TAG</text><text class="hcol" x="300" y="658">DESCRIPCIÓN</text><text class="hcol" x="1150" y="658">ESTADO</text>
+      <g id="halm"></g>
+    </svg><div class="hfp" id="hfp" hidden></div>`;
+    host.innerHTML = `<div class="hmi-wrap">${svg}</div><p class="hmi-cap"><b>Lo que ve el operador.</b> La misma pantalla está en la puerta de UCP-101, en la sala eléctrica, y en la sala de control central. Grises según ISA-101: equipo oscuro = en marcha, línea gruesa = hay flujo, línea punteada = rejilla energizada, y el color aparece solo con una alarma (1 urgente, 2 alta, 3 media). Tocá un equipo para abrir su ventana de control.</p>`;
+    const $ = id => document.getElementById(id);
+
+    $('hb_start').addEventListener('click', () => { if (S.hold) return; SIM.start(); });
+    $('hb_stop').addEventListener('click', () => SIM.stop());
+    $('hb_reset').addEventListener('click', () => SIM.reset());
+    $('hb_ack').addEventListener('click', () => SIM.ack());
+
+    // Ventana de control (faceplate)
+    const fp = $('hfp');
+    let fpTag = null;
+    host.querySelectorAll('.hq').forEach(g => g.addEventListener('click', () => { fpTag = g.dataset.tag; renderFP(); }));
+    const LOOP = { 'TCV-101': ['TIC-102', () => S.heatOn, () => `${fmt(S.sp.T, 0)} °C`, () => `${fmt(S.The, 1)} °C`, () => `${fmt(S.TCV * 100, 0)} %`],
+      'LT-101': ['LIC-101', () => S.hiMeas >= 0.5, () => `${fmt(S.sp.hi, 2)} m`, () => `${fmt(S.hiMeas, 2)} m`, () => `${fmt(S.LV * 100, 0)} %`],
+      'LV-101': ['LIC-101', () => S.hiMeas >= 0.5, () => `${fmt(S.sp.hi, 2)} m`, () => `${fmt(S.hiMeas, 2)} m`, () => `${fmt(S.LV * 100, 0)} %`],
+      'PCV-101': ['PIC-101', () => S.QoOut > 10, () => `${fmt(S.sp.P, 1)} bar g`, () => `${fmt(S.P, 2)} bar g`, () => `${fmt(S.PCV * 100, 0)} %`],
+      'FCV-101': ['FIC-101', () => S.xvOpen, () => `${fmt(S.sp.Q * S.qRamp, 0)} m³/d`, () => `${fmt(S.Qfeed * 24, 0)} m³/d`, () => `${fmt((S.FCV || 0) * 100, 0)} %`] };
+    function stateOf(t) {
+      const run = { 'P-101': S.P101, 'P-201': S.P201, 'E-101': S.dutyMW > 0.05 }[t];
+      if (run !== undefined) return run ? 'EN MARCHA' : (t === 'P-201' && S.faults.F1 ? 'FALLA · TÉRMICO' : 'DETENIDO');
+      if (t === 'TR-101A') return S.tripA ? 'DISPARADO' : S.rampA > 0.99 ? 'ENERGIZADO' : S.rampA > 0 ? 'EN RAMPA' : 'DESENERGIZADO';
+      if (t === 'TR-101B') return S.tripB ? 'DISPARADO' : S.rampB > 0.99 ? 'ENERGIZADO' : S.rampB > 0 ? 'EN RAMPA' : 'DESENERGIZADO';
+      if (t === 'XV-101') return S.xvOpen ? 'ABIERTA' : 'CERRADA';
+      if (t === 'XV-301') return !S.divert && S.QoOut > 1 ? 'ABIERTA' : 'CERRADA';
+      if (t === 'XV-302') return S.divert && S.QoOut > 1 ? 'ABIERTA · DESVÍO' : 'CERRADA';
+      if (t === 'LSLL-101') return S.LSLL ? 'GAS DETECTADO' : 'NORMAL';
+      if (LOOP[t]) return `${LOOP[t][0]} · ${LOOP[t][1]() ? 'AUTO' : 'EN ESPERA'}`;
+      return 'EN SERVICIO';
+    }
+    function renderFP() {
+      if (!fpTag) { fp.hidden = true; return; }
+      const inf = (UI.INFO[fpTag] && UI.INFO[fpTag].alias ? UI.INFO[UI.INFO[fpTag].alias] : UI.INFO[fpTag]) || { name: fpTag, live: () => [] };
+      let rows = inf.live().slice(0, 5).map(r => [r[0], r[1]]);
+      if (LOOP[fpTag]) { const L = LOOP[fpTag]; rows = [['SP', L[2]()], ['PV', L[3]()], ['Salida', L[4]()]].concat(rows.slice(0, 3)); }
+      fp.innerHTML = `<div class="hfp-h"><b>${esc(fpTag)}</b><button id="hfpX" aria-label="Cerrar">×</button></div>
+        <div class="hfp-n">${esc(inf.name)}</div>
+        <div class="hfp-s">${esc(stateOf(fpTag))} <span>· REMOTO</span></div>
+        <dl>${rows.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>
+        <button class="hfp-b" id="hfpInfo">Ver ficha del equipo</button>`;
+      fp.hidden = false;
+      $('hfpX').onclick = () => { fpTag = null; fp.hidden = true; };
+      $('hfpInfo').onclick = () => UI.openFicha(fpTag);
+    }
+
+    const ALM_EQ = { v101: ['LAH', 'LAHH', 'PAD', 'SOL', 'PAL', 'TSLL', 'TAL', 'ESD'], lt101: ['LAH', 'LAHH', 'LAL'], tra: ['TRA', 'EAL_A'], trb: ['TRB', 'EAL_B'], lsll: ['LSLL'],
+      at101: ['BSWH', 'BSWHH', 'SALT'], at102: ['OIW'], e101: ['HOT'], p201: ['P201'], p101: ['SLUG'], tk302: ['TK302'] };
+    const MODE = { STOP: 'DETENIDO', START: 'ARRANCANDO', RUN: 'PRODUCCIÓN', STOPPING: 'PARANDO', ESD: 'PARADA DE EMERGENCIA' };
+    const setV = (id, t) => { const e = $('hv_' + id); if (e) e.textContent = t; };
+    const onL = (id, on) => { const e = $('hl_' + id); if (e) e.classList.toggle('on', !!on); };
+    const onE = (id, on) => { const e = $('he_' + id); if (e) e.classList.toggle('on', !!on); };
+    const lvl = (id, p, y, h) => { const e = $('hlv_' + id); if (!e) return; const hh = Math.max(0, Math.min(1, p)) * (h - 6); e.setAttribute('height', hh); e.setAttribute('y', y + h - 3 - hh); };
+    const band = (id, a, b) => { const e = $('hv_' + id); const y0 = yOf(b), y1 = yOf(a); e.setAttribute('y', Math.min(y0, y1)); e.setAttribute('height', Math.max(0, Math.abs(y1 - y0))); };
+
+    function update() {
+      const fl = S.Qfeed > 0.5;
+      const mode = S.hold ? 'HOLD' : S.mode;
+      $('hst').textContent = S.hold ? 'ALIMENTACIÓN CORTADA' : MODE[S.mode] || S.mode;
+      $('hst_r').setAttribute('class', 'hstate ' + mode);
+      $('hclk').textContent = new Date(T0 + S.t * 1000).toLocaleString('es-AR', { timeZone: 'UTC' });
+      const [msg, sev] = SIM.statusText();
+      const ev = S.events[0];
+      $('hmsg').textContent = ev ? `${SIM.clock(ev.t)}  ${ev.txt}`.slice(0, 150) : msg;
+      $('hmsg').setAttribute('class', 'hmsg ' + (sev === 'alarm' ? 'alarm' : sev === 'warn' ? 'warn' : ''));
+      // líneas
+      onL('in', fl); onL('feed', fl); onL('heated', fl); onL('dem', S.Qdem > 0.01 && fl); onL('demsuc', S.Qdem > 0.01 && fl);
+      onL('hot', S.mHot > 0.5); onL('hotret', S.mHot > 0.5); onL('oil', S.QoOut > 1);
+      onL('to301', S.to301 > 1); onL('to302', S.to302 > 1); onL('to302b', S.to302 > 1); onL('water', S.QLV > 0.2);
+      onL('trA', S.rampA > 0.5 && !S.tripA); onL('trB', S.rampB > 0.5 && !S.tripB);
+      // equipos
+      onE('p101', S.P101); onE('p201', S.P201); onE('e101', S.dutyMW > 0.05); onE('tcv', S.TCV > 0.01); onE('xv101', S.xvOpen); onE('fcv', (S.FCV || 0) > 0.01);
+      onE('pcv', S.PCV > 0.02 && S.QoOut > 1); onE('xv301', S.to301 > 1); onE('xv302', S.to302 > 1); onE('lv101', S.LV > 0.01);
+      onE('tra', S.rampA > 0.5 && !S.tripA); onE('trb', S.rampB > 0.5 && !S.tripB);
+      // recipiente
+      band('sol', 0, S.solids); band('w', S.solids, S.hi); band('pad', S.hi, S.hi + S.pad);
+      const g = $('hv_gas'); g.setAttribute('height', S.hg * PXM);
+      const sp = $('hv_sp'); sp.setAttribute('y1', yOf(S.sp.hi)); sp.setAttribute('y2', yOf(S.sp.hi));
+      lvl('tk201', S.tote, 496, 40); lvl('tk301', S.tk301, 186, 84); lvl('tk302', S.tk302, 300, 60);
+      $('hlt_tk301').textContent = fmt(S.tk301 * 100, 0) + ' %'; $('hlt_tk302').textContent = fmt(S.tk302 * 100, 0) + ' %';
+      // valores
+      setV('p101', S.P101 ? fmt(S.pumpKW, 0) + ' kW' : '0 kW');
+      setV('p201', fmt(S.Qdem, 2) + ' L/h');
+      setV('tcv', fmt(S.TCV * 100, 0) + ' %');
+      setV('tt102', 'TT ' + fmt(S.The, 1) + ' °C');
+      setV('xv101s', S.xvOpen ? 'ABIERTA' : 'CERRADA');
+      setV('ft101', fmt(S.Qfeed * 24, 0) + ' m³/d');
+      setV('hi', 'Interfase ' + fmt(S.hi, 2) + ' m');
+      setV('padv', 'Colchón ' + fmt(S.pad * 100, 0) + ' cm');
+      setV('vt', 'TT-103 ' + fmt(S.Tv, 1) + ' °C');
+      setV('lt101', fmt(S.hiMeas, 2) + ' m');
+      setV('tra', S.tripA ? 'DISPARADO' : fmt(S.A.V, 1) + ' kV'); setV('tra2', fmt(S.A.I, 2) + ' A');
+      setV('trb', S.tripB ? 'DISP.' : fmt(S.B.V, 1) + ' kV'); setV('trb2', fmt(S.B.I, 2) + ' A');
+      setV('lsll', S.LSLL ? 'GAS' : 'NORMAL');
+      setV('pt101', fmt(S.P, 2) + ' bar');
+      setV('at101', fl ? 'BS&W ' + fmt(S.AT101, 2) + ' %' : 'BS&W —');
+      setV('lv101', fmt(S.LV * 100, 0) + ' % · ' + fmt(S.QLV, 1) + ' m³/h');
+      setV('at102', S.QLV > 0.2 ? 'OiW ' + fmt(S.AT102, 0) + ' ppm' : 'OiW —');
+      setV('dest', S.QoOut > 1 ? (S.divert ? '→ TK-302' : '→ TK-301') : '');
+      // indicadores
+      for (const k of KPI) {
+        const v = k.v(), e = $('hkp_' + k.id), t = $('hk_' + k.id);
+        t.textContent = v == null ? '— ' + k.u : fmt(v, k.dg) + ' ' + k.u;
+        const n0 = val(k.n[0]), n1 = val(k.n[1]);
+        const nb = $('hkn_' + k.id); nb.setAttribute('x', kx(k, n0)); nb.setAttribute('width', Math.max(0, kx(k, n1) - kx(k, n0)));
+        const y = +e.dataset.y;
+        $('hkl_' + k.id).innerHTML = k.lim.map(([l, ty]) => { const lx = kx(k, val(l)); return `<line class="hkl ${/HH|LL/.test(ty) ? 'hh' : ''}" x1="${lx}" y1="${y - 3}" x2="${lx}" y2="${y + 13}"/>`; }).join('');
+        if (v == null) { e.setAttribute('visibility', 'hidden'); continue; }
+        e.setAttribute('visibility', 'visible');
+        e.setAttribute('transform', `translate(${kx(k, v)},${y})`);
+        const out = v < n0 - 1e-9 || v > n1 + 1e-9, hi = k.lim.some(([l, ty]) => (ty.startsWith('L') ? v < val(l) : v > val(l)));
+        e.setAttribute('class', 'hkp' + (hi ? ' al' : out ? ' dev' : ''));
+      }
+      // alarmas en el mímico
+      const act = new Map(S.alarms.filter(a => a.active).map(a => [a.id, a]));
+      for (const id in ALM_EQ) {
+        const gEl = $('ha_' + id); if (!gEl) continue;
+        let pr = 9; for (const k of ALM_EQ[id]) if (act.has(k)) pr = Math.min(pr, act.get(k).pr);
+        gEl.setAttribute('visibility', pr < 9 ? 'visible' : 'hidden');
+        if (pr < 9) { gEl.setAttribute('class', 'hal p' + pr); gEl.querySelector('text').textContent = pr; }
+      }
+      const AL = [...S.alarms].sort((a, b) => (b.active - a.active) || a.pr - b.pr || b.t - a.t);
+      const cnt = [1, 2, 3].map(p => AL.filter(a => a.active && a.pr === p).length);
+      $('hcnt').innerHTML = cnt.map((c, i) => `<rect class="hcb p${i + 1}${c ? '' : ' z'}" x="${1126 + i * 48}" y="9" width="42" height="28" rx="3"/><text class="hcbt${c ? '' : ' z'}" x="${1147 + i * 48}" y="28" text-anchor="middle">${c}</text>`).join('');
+      $('halm').innerHTML = AL.slice(0, 4).map((a, i) => {
+        const y = 678 + i * 18;
+        return `<rect class="hrow${a.acked ? '' : ' un'}" x="16" y="${y - 13}" width="1248" height="17"/>
+          <rect class="hpr p${a.pr}" x="24" y="${y - 11}" width="30" height="14" rx="2"/><text class="hprt" x="39" y="${y}" text-anchor="middle">${a.pr}</text>
+          <text class="hcell" x="90" y="${y}">${SIM.clock(a.t)}</text><text class="hcell b" x="190" y="${y}">${esc(a.tag)}</text>
+          <text class="hcell" x="300" y="${y}">${esc(a.txt.length > 110 ? a.txt.slice(0, 108) + '…' : a.txt)}</text>
+          <text class="hcell" x="1150" y="${y}">${a.active ? (a.acked ? 'Reconocida' : 'Sin reconocer') : 'Normalizada'}</text>`;
+      }).join('') + (AL.length ? '' : `<text class="hcell" x="22" y="680">Sin alarmas activas.</text>`) + (AL.length > 4 ? `<text class="hcell" x="22" y="749">+ ${AL.length - 4} más</text>` : '');
+      const dis = (id, d) => $('hb_' + id).classList.toggle('dis', d);
+      dis('start', S.mode !== 'STOP'); dis('stop', !(S.mode === 'RUN' || S.mode === 'START')); dis('reset', !(S.tripA || S.tripB || S.esd)); dis('ack', !S.alarms.some(a => !a.acked));
+      if (fpTag) renderFP();
+    }
+    let acc = 0;
+    SIM.onFrame.push(dt => { if (SIM.view !== 'hmi') return; acc += dt; if (acc < 0.25) return; acc = 0; update(); });
+    SIM.renderHMI = update;
+  })();
+
+  /* =================== P&ID: zoom, desplazamiento y fichas =================== */
+  (function pid() {
+    const view = document.getElementById('pidview'), svg = view && view.querySelector('svg');
+    if (!svg) return;
+    const W = 420, H = 297;                      // hoja A3 en mm (viewBox)
+    let z = 1, x = 0, y = 0, fitted = false;
+    const zl = document.getElementById('pidZoom');
+    const fitZ = () => Math.min(view.clientWidth / W, view.clientHeight / H) * 0.96;
+    const clampPan = () => {
+      const vw = view.clientWidth, vh = view.clientHeight, sw = W * z, sh = H * z, m = 60;
+      x = sw <= vw ? (vw - sw) / 2 : Math.min(m, Math.max(vw - sw - m, x));
+      y = sh <= vh ? (vh - sh) / 2 : Math.min(m, Math.max(vh - sh - m, y));
+    };
+    function apply() {
+      clampPan();
+      svg.style.width = (W * z) + 'px'; svg.style.height = (H * z) + 'px';
+      svg.style.transform = `translate(${x}px, ${y}px)`;
+      zl.textContent = Math.round(z / fitZ() * 100) + ' %';
+    }
+    function zoomAt(f, px, py) {
+      const zf = fitZ(), nz = Math.min(zf * 12, Math.max(zf * 0.8, z * f));
+      x = px - (px - x) * nz / z; y = py - (py - y) * nz / z; z = nz; apply();
+    }
+    function fit() { z = fitZ(); x = 0; y = 0; apply(); }
+    function focus(mx, my, mw, mh) {           // encuadra un rectángulo de la hoja (mm)
+      const vw = view.clientWidth, vh = view.clientHeight;
+      z = Math.min(vw / mw, vh / mh); x = vw / 2 - (mx + mw / 2) * z; y = vh / 2 - (my + mh / 2) * z; apply();
+    }
+    SIM.showPID = () => { requestAnimationFrame(() => { if (!fitted || !view.clientWidth) { fit(); fitted = !!view.clientWidth; } else apply(); mark(); }); };
+    new ResizeObserver(() => { if (SIM.view === 'pid' && view.clientWidth) { if (!fitted) { fit(); fitted = true; } else apply(); } }).observe(view);
+    document.getElementById('pidFit').onclick = fit;
+    document.getElementById('pidVessel').onclick = () => focus(185, 42, 160, 140);
+    document.getElementById('pidIn').onclick = () => zoomAt(1.4, view.clientWidth / 2, view.clientHeight / 2);
+    document.getElementById('pidOut').onclick = () => zoomAt(1 / 1.4, view.clientWidth / 2, view.clientHeight / 2);
+    view.addEventListener('wheel', e => {
+      e.preventDefault();
+      const r = view.getBoundingClientRect();
+      zoomAt(Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0016)), e.clientX - r.left, e.clientY - r.top);
+    }, { passive: false });
+    view.addEventListener('dblclick', e => { const r = view.getBoundingClientRect(); zoomAt(1.8, e.clientX - r.left, e.clientY - r.top); });
+    view.addEventListener('keydown', e => {
+      const k = e.key, c = [view.clientWidth / 2, view.clientHeight / 2];
+      if (k === '+' || k === '=') zoomAt(1.25, ...c); else if (k === '-') zoomAt(0.8, ...c); else if (k === '0') fit();
+      else if (k.startsWith('Arrow')) { x += k === 'ArrowLeft' ? 60 : k === 'ArrowRight' ? -60 : 0; y += k === 'ArrowUp' ? 60 : k === 'ArrowDown' ? -60 : 0; apply(); }
+      else return;
+      e.preventDefault();
+    });
+    // arrastre y pellizco
+    const pts = new Map(); let moved = 0, pinch = null, downT = null;
+    view.addEventListener('pointerdown', e => {
+      view.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+      if (pts.size === 1) { moved = 0; downT = e.target; }
+      if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) }; moved = 99; }
+      view.classList.add('drag');
+    });
+    view.addEventListener('pointermove', e => {
+      if (!pts.has(e.pointerId)) return;
+      const p = pts.get(e.pointerId), dx = e.clientX - p[0], dy = e.clientY - p[1];
+      pts.set(e.pointerId, [e.clientX, e.clientY]);
+      if (pts.size === 2 && pinch) {
+        const [a, b] = [...pts.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), r = view.getBoundingClientRect();
+        zoomAt(d / pinch.d, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); pinch.d = d;
+        x += dx / 2; y += dy / 2; apply();
+      } else if (pts.size === 1) { moved += Math.abs(dx) + Math.abs(dy); x += dx; y += dy; apply(); }
+    });
+    const up = e => {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (pts.size < 2) pinch = null;
+      if (!pts.size) {
+        view.classList.remove('drag');
+        if (moved < 6 && e.type === 'pointerup' && downT) {
+          const g = downT.closest && downT.closest('.pq');
+          if (g) UI.openFicha(g.dataset.tag); else UI.closeFicha();
+        }
+      }
+    };
+    view.addEventListener('pointerup', up); view.addEventListener('pointercancel', up);
+    // resaltar en el plano el equipo de la ficha abierta (venga de donde venga)
+    const groups = [...svg.querySelectorAll('.pq')];
+    const rk = id => { let k = id, i = UI.INFO[k], n = 0; while (i && i.alias && n++ < 4) { k = i.alias; i = UI.INFO[k]; } return k; };
+    groups.forEach(g => { g.dataset.key = rk(g.dataset.tag); });
+    function mark() {
+      const ficha = document.getElementById('ficha'), sel = ficha.hidden ? null : UI.sel;
+      groups.forEach(g => g.classList.toggle('sel', !!sel && g.dataset.key === sel));
+    }
+    new MutationObserver(mark).observe(document.getElementById('ficha'), { attributes: true, attributeFilter: ['hidden'], childList: true });
+  })();
+
+  /* =================== PESTAÑAS: PLANTA 3D / HMI / PLC / P&ID =================== */
+  (function tabs() {
+    const stage = document.getElementById('stage'), note = document.getElementById('vnote');
+    const tabsEl = [...document.querySelectorAll('.vtab')];
+    const NOTES = { '3d': 'La planta como la ve quien la recorre', hmi: 'Lo que ve el operador en la sala de control', plc: 'El programa que decide qué hace cada equipo, en vivo', pid: 'El plano de cañerías e instrumentos del módulo' };
+    function setView(v) {
+      SIM.view = v; stage.dataset.v = v;
+      tabsEl.forEach(t => { const on = t.dataset.v === v; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1; });
+      document.getElementById('hmi').hidden = v !== 'hmi';
+      document.getElementById('plc').hidden = v !== 'plc';
+      document.getElementById('pid').hidden = v !== 'pid';
+      if (v === 'pid' && SIM.showPID) SIM.showPID();
+      note.textContent = NOTES[v];
+      if (v === 'hmi' && SIM.renderHMI) SIM.renderHMI();
+      if (v === 'plc' && SIM.renderPLC) SIM.renderPLC();
+      try { localStorage.setItem('desh-view', v); } catch (e) {}
+    }
+    tabsEl.forEach((t, i) => {
+      t.addEventListener('click', () => setView(t.dataset.v));
+      t.addEventListener('keydown', e => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        const n = tabsEl[(i + d + tabsEl.length) % tabsEl.length]; n.focus(); setView(n.dataset.v);
+      });
+    });
+    UI.setView = setView; SIM.setView = setView;
+    setView('3d');
+  })();
+})(window);
+
+</script>
 <script type="module">
 /* ============================================================
    ESCENA 3D — skid del deshidratador electrostático
@@ -1406,7 +3461,8 @@ const MAT = {
   porcelain: M(0x7a4426, 0.25, 0.1), concrete: M(0xbbb6ac, 0.95, 0), ground: M(0xcdc5b6, 1, 0), tank: M(0xe2e5e8, 0.45, 0.15),
   ss: M(0xc9ced3, 0.3, 0.9), orange: M(0xdc7a28, 0.5, 0.2), hdpe: M(0xf3f3ee, 0.55, 0, { transparent: true, opacity: 0.6, depthWrite: false }),
   glass: M(0x9fc7e6, 0.1, 0.1, { transparent: true, opacity: 0.45 }), rubber: M(0x2a2d31, 0.85, 0),
-  rod: M(0x9aa4ad, 0.3, 0.85), insul: M(0xf0ece2, 0.3, 0.05), skip: M(0xd99a1d, 0.55, 0.25), panel: M(0xd9dcdf, 0.45, 0.2)
+  rod: M(0x9aa4ad, 0.3, 0.85), insul: M(0xf0ece2, 0.3, 0.05), skip: M(0xd99a1d, 0.55, 0.25), panel: M(0xd9dcdf, 0.45, 0.2),
+  exbox: M(0xa7afb6, 0.55, 0.6), cab: M(0xd5d8db, 0.5, 0.15), cabDark: M(0x3b4148, 0.5, 0.3), ehouse: M(0xe6e8ea, 0.45, 0.25), floor: M(0x8b949c, 0.8, 0.1)
 };
 const CLIPPED = [MAT.shell, MAT.liner, MAT.rod, MAT.insul];
 const FLC = { emul: 0x7a4a22, hot: 0xbf5a1f, oil: 0xeea21f, water: 0x2f8fd8, dem: 0x3fae6a, hotoil: 0xd9473b, wash: 0x7fc8f0, solids: 0x4a4038, gas: 0xa9b4be };
@@ -1464,6 +3520,7 @@ defInst('ins', GEO.cyl12, MAT.insul, false);
 const PICK = [], OBJS = {};
 function reg(id, obj, clip = false) {
   obj.traverse(o => { if (o.isMesh) { o.userData.pick = id; if (clip) o.userData.clip = true; } });
+  if (!obj.isMesh && !obj.userData.pick) obj.userData.pick = id;
   PICK.push(obj); (OBJS[id] = OBJS[id] || []).push(obj);
 }
 
@@ -1936,8 +3993,14 @@ transformer('TR-101B', -0.5, 0.2);
   }
   const ep = grp(scene, [3.65, SKY, 2.05]);
   for (const s of [-1, 1]) part(ep, GEO.box, MAT.skid, [s * 0.38, 0.2, 0], [0.06, 0.4, 0.4]);
-  part(ep, GEO.rbox, MAT.panel, [0, 1.2, 0], [0.95, 1.6, 0.45]);
-  part(ep, GEO.box, MAT.panel, [0, 2.04, -0.04], [1.05, 0.04, 0.55]);
+  part(ep, GEO.rbox, MAT.exbox, [0, 1.2, 0], [0.95, 1.6, 0.45]);
+  part(ep, GEO.box, MAT.exbox, [0, 2.04, -0.04], [1.05, 0.04, 0.55]);
+  ep.updateWorldMatrix(true, false);
+  for (let i = 0; i < 28; i++) { const t = i / 28, per = 2 * (0.86 + 1.5), d = t * per; let x, y; if (d < 0.86) { x = -0.43 + d; y = 0.45; } else if (d < 0.86 + 1.5) { x = 0.43; y = 0.45 + (d - 0.86); } else if (d < 2 * 0.86 + 1.5) { x = 0.43 - (d - 0.86 - 1.5); y = 1.95; } else { x = -0.43; y = 1.95 - (d - 2 * 0.86 - 1.5); } addInstLocal('bolt', ep, mtx(V(x, y, 0.232), qFrom(V(0, 0, 1)), V(0.013, 0.025, 0.013))); }
+  part(ep, GEO.cyl, MAT.black, [0.3, 0.95, 0.235], [0.035, 0.03, 0.035], qFrom(V(0, 0, 1)));
+  part(ep, GEO.box, MAT.white, [0.3, 0.95, 0.255], [0.05, 0.012, 0.01]);
+  part(ep, GEO.cyl, MAT.red, [-0.3, 0.95, 0.24], [0.045, 0.05, 0.045], qFrom(V(0, 0, 1)));
+  part(ep, GEO.cyl, MAT.yellow, [-0.3, 0.95, 0.228], [0.08, 0.01, 0.08], qFrom(V(0, 0, 1)));
   for (const s of [-1, 1]) {
     part(ep, GEO.cyl, MAT.black, [s * 0.2, 1.6, 0.23], [0.1, 0.02, 0.1], qFrom(V(0, 0, 1)));
     part(ep, GEO.disc, MAT.white, [s * 0.2, 1.6, 0.242], [0.085, 0.085, 1]);
@@ -1979,6 +4042,12 @@ transformer('TR-101B', -0.5, 0.2);
   part(g, GEO.box, MAT.ss, [-4.94, 1.3, 2.2], [0.72, 0.22, 0.2]);
   bar('ss', V(-4.94, 1.18, 2.2), V(-4.94, SKY, 2.2), 0.02);
   reg('LT-101', g);
+})();
+// TT-103: temperatura en el recipiente
+(function tt103() {
+  const y = 2.25, zs = shellZ(y);
+  nozzle('TT-103', V(-1.2, y, zs - 0.02), V(0, 0, 1), 0.03, 0.16);
+  transmitter(V(-1.2, y, zs + 0.3), V(0, 0, -1), 'TT-103', 0x8a5a9e);
 })();
 // LSLL-101 y PT-101 sobre el recipiente
 (function topInst() {
@@ -2272,6 +4341,140 @@ for (const [x0, x1, z0, z1] of [[12.8, 24.0, -11.0, -10.7], [12.8, 24.0, 8.7, 9.
   reg('X-401', g); window.__skipFill = fill;
 })();
 
+/* ---------------- Sala eléctrica SE-101, cajas Ex y bandejas ---------------- */
+function corrWall(L, H) {
+  const pitch = 0.278, d = 0.036, t = 0.004, pts = [[0, 0]];
+  for (let x = 0; x < L - 1e-6; x += pitch) for (const [dx, dy] of [[0.07, 0], [0.14, d], [0.208, d], [0.278, 0]]) { const xx = Math.min(L, x + dx); const last = pts[pts.length - 1]; if (xx - last[0] > 1e-5) pts.push([xx, dy]); }
+  const sh = new THREE.Shape(); sh.moveTo(pts[0][0], pts[0][1]);
+  for (const q of pts.slice(1)) sh.lineTo(q[0], q[1]);
+  for (const q of pts.slice().reverse()) sh.lineTo(q[0], q[1] + t);
+  const g = new THREE.ExtrudeGeometry(sh, { depth: H, bevelEnabled: false }); g.rotateX(-Math.PI / 2); return g;
+}
+const EH = { x: -1.5, y: 0.45, z: -13.6, L: 6.06, W: 2.44, H: 2.8 };
+const ehouse = grp(scene, [EH.x, EH.y, EH.z]);
+const CTRL = {};
+(function buildEhouse() {
+  const L2 = EH.L / 2, W2 = EH.W / 2, H = EH.H;
+  // base
+  part(scene, GEO.box, MAT.concrete, [EH.x, 0.1, EH.z], [EH.L + 2.2, 0.2, EH.W + 1.8]).castShadow = false;
+  for (const x of [-2.6, 0, 2.6]) part(scene, GEO.box, MAT.concrete, [EH.x + x, 0.325, EH.z], [0.4, 0.25, EH.W + 0.2]);
+  const shellG = grp(ehouse);
+  part(shellG, GEO.box, MAT.floor, [0, -0.03, 0], [EH.L, 0.06, EH.W]);
+  const wb = part(shellG, corrWall(EH.L, H), MAT.ehouse, [-L2, 0, -W2 + 0.04]);
+  const we = part(shellG, corrWall(EH.W, H), MAT.ehouse, [-L2 + 0.04, 0, W2]); we.rotation.y = Math.PI / 2;
+  const wf = part(shellG, corrWall(EH.W, H), MAT.ehouse, [L2 - 0.04, 0, -W2]); wf.rotation.y = -Math.PI / 2;
+  part(shellG, GEO.box, MAT.ehouse, [0, H + 0.04, 0], [EH.L + 0.1, 0.08, EH.W + 0.1]);
+  part(shellG, GEO.box, MAT.ehouse, [0, 0.12, W2 - 0.03], [EH.L, 0.24, 0.06]);
+  part(shellG, GEO.box, MAT.ehouse, [0, H - 0.17, W2 - 0.03], [EH.L, 0.34, 0.06]);
+  for (const x of [-L2 + 0.06, L2 - 0.06]) for (const z of [-W2 + 0.06, W2 - 0.06]) part(shellG, GEO.box, MAT.ehouse, [x, H / 2, z], [0.13, H, 0.13]);
+  // puerta y escalón en el extremo -x
+  part(shellG, GEO.box, M(0xc9cdd1, 0.45, 0.3), [-L2 - 0.02, 1.05, 0.25], [0.04, 2.05, 0.9]);
+  part(shellG, GEO.box, MAT.steel, [-L2 - 0.06, 1.0, 0.6], [0.04, 0.04, 0.16]);
+  sign(shellG, [-L2 - 0.05, 1.7, 0.25], new THREE.Quaternion().setFromAxisAngle(UP, -Math.PI / 2), 0.26);
+  part(scene, GEO.box, MAT.galv, [EH.x - L2 - 0.55, 0.22, EH.z + 0.25], [1.0, 0.44, 1.2]);
+  // climatización 2 × 100 % en el extremo +x
+  for (const z of [-0.55, 0.55]) {
+    part(shellG, GEO.rbox, MAT.white, [L2 + 0.2, 1.9, z], [0.36, 0.72, 0.9]);
+    const fan = part(shellG, GEO.cyl, MAT.black, [L2 + 0.385, 1.9, z], [0.26, 0.02, 0.26], qFrom(V(1, 0, 0))); fan.castShadow = false;
+  }
+  // cartel
+  const tex = canvasTex(1024, 128, (g, w, h) => { g.fillStyle = '#1d2833'; g.fillRect(0, 0, w, h); g.fillStyle = '#ffffff'; g.font = 'bold 46px sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'center'; g.fillText('SE-101 · SALA ELÉCTRICA Y DE CONTROL', w / 2, h / 2 + 2); });
+  const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.3), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }));
+  plate.position.set(1.2, H - 0.17, W2 + 0.005); shellG.add(plate);
+  reg('SE-101', shellG);
+  // iluminación interior
+  for (const x of [-1.6, 1.4]) {
+    part(shellG, GEO.box, new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff4e0, emissiveIntensity: 1.2 }), [x, H - 0.03, -0.1], [1.2, 0.04, 0.12]).castShadow = false;
+    const pl = new THREE.PointLight(0xfff2e0, 9, 7, 1.6); pl.position.set(x, H - 0.25, 0.2); ehouse.add(pl);
+  }
+  // matafuego
+  part(shellG, GEO.cyl, MAT.red, [-L2 + 0.3, 0.42, W2 - 0.35], [0.08, 0.62, 0.08]);
+  // ---- tableros a lo largo de la pared del fondo (frente hacia +z)
+  const z0 = -W2 + 0.04 + 0.32, zf = z0 + 0.3;
+  function cabinet(id, x0, w, mat, opt = {}) {
+    const g = grp(ehouse), cx = x0 + w / 2;
+    part(g, GEO.box, MAT.cabDark, [cx, 0.05, z0], [w - 0.01, 0.1, 0.58]);
+    part(g, GEO.box, mat, [cx, 1.15, z0], [w - 0.01, 2.1, 0.6]);
+    part(g, GEO.box, MAT.cabDark, [cx, 2.22, z0], [w - 0.01, 0.04, 0.62]);
+    if (opt.drawers) for (let y = 0.45; y < 2.05; y += 0.33) {
+      part(g, GEO.box, MAT.cabDark, [cx, y, zf + 0.002], [w - 0.06, 0.008, 0.004]);
+      part(g, GEO.box, MAT.steel, [cx + w / 2 - 0.1, y + 0.16, zf + 0.015], [0.03, 0.08, 0.03]);
+      const lmp = part(g, GEO.sph, M(0x2f9a5f, 0.3, 0, { emissive: 0x2f9a5f, emissiveIntensity: 0.05 }), [cx - w / 2 + 0.1, y + 0.2, zf + 0.01], [0.018, 0.018, 0.018]);
+      (CTRL.drawerLamps = CTRL.drawerLamps || []).push(lmp);
+    } else {
+      part(g, GEO.box, MAT.cabDark, [cx, 1.15, zf + 0.002], [0.006, 2.0, 0.004]);
+      part(g, GEO.box, MAT.steel, [cx + w / 2 - 0.08, 1.1, zf + 0.02], [0.03, 0.2, 0.03]);
+    }
+    reg(id, g);
+    return { g, cx };
+  }
+  cabinet('CCM-101', -2.95, 0.6, MAT.cab, { drawers: true }); cabinet('CCM-101', -2.35, 0.6, MAT.cab, { drawers: true });
+  cabinet('CCM-101', -1.75, 0.6, MAT.cab, { drawers: true }); cabinet('CCM-101', -1.15, 0.6, MAT.cab, { drawers: true });
+  const u1 = cabinet('UCP-101', -0.5, 0.7, MAT.cab), u2 = cabinet('UCP-101', 0.2, 0.7, MAT.cab);
+  const sis = cabinet('SIS-101', 0.95, 0.7, MAT.cab);
+  cabinet('UPS-101', 1.7, 0.6, M(0x5c6670, 0.5, 0.3)); cabinet('UPS-101', 2.32, 0.6, M(0x5c6670, 0.5, 0.3));
+  // pantalla HMI en la puerta de UCP-101
+  const scr = document.createElement('canvas'); scr.width = 320; scr.height = 200;
+  CTRL.scrCtx = scr.getContext('2d');
+  CTRL.scrTex = new THREE.CanvasTexture(scr); CTRL.scrTex.colorSpace = THREE.SRGBColorSpace;
+  part(u1.g, GEO.box, MAT.black, [u1.cx, 1.45, zf + 0.012], [0.42, 0.29, 0.02]);
+  const sm = new THREE.Mesh(new THREE.PlaneGeometry(0.38, 0.24), new THREE.MeshBasicMaterial({ map: CTRL.scrTex, toneMapped: false }));
+  sm.position.set(u1.cx, 1.45, zf + 0.024); u1.g.add(sm); sm.userData.pick = 'UCP-101';
+  CTRL.ucpLamps = [0x2f9a5f, 0x2f9a5f, 0xc48a12].map((c, i) => part(u1.g, GEO.sph, M(c, 0.3, 0, { emissive: c, emissiveIntensity: 0.9 }), [u1.cx - 0.1 + i * 0.1, 1.15, zf + 0.012], [0.02, 0.02, 0.02]));
+  part(u2.g, GEO.box, MAT.white, [u2.cx, 1.7, zf + 0.006], [0.3, 0.1, 0.006]);
+  // SIS: franja de identificación, pulsador ESD y lámparas
+  part(sis.g, GEO.box, MAT.red, [sis.cx, 2.05, zf + 0.004], [0.68, 0.12, 0.006]);
+  part(sis.g, GEO.cyl, MAT.yellow, [sis.cx, 1.35, zf + 0.008], [0.09, 0.012, 0.09], qFrom(V(0, 0, 1)));
+  part(sis.g, GEO.cyl, MAT.red, [sis.cx, 1.35, zf + 0.04], [0.05, 0.06, 0.05], qFrom(V(0, 0, 1)));
+  CTRL.sisLamp = part(sis.g, GEO.sph, M(0x2f9a5f, 0.3, 0, { emissive: 0x2f9a5f, emissiveIntensity: 0.9 }), [sis.cx, 1.65, zf + 0.012], [0.025, 0.025, 0.025]);
+  // bandeja interior desde la entrada de cables
+  const ex = -0.5;
+  part(shellG, GEO.box, MAT.galv, [ex, H - 0.17, W2 + 0.05], [0.42, 0.3, 0.1]);
+  for (const s2 of [-1, 1]) bar('gal', V(EH.x + ex + s2 * 0.15, EH.y + H - 0.3, EH.z + W2), V(EH.x + ex + s2 * 0.15, EH.y + H - 0.3, EH.z + z0 + 0.1), 0.012);
+  for (const s2 of [-1, 1]) bar('gal', V(EH.x - 2.95, EH.y + H - 0.3, EH.z + z0 + s2 * 0.15), V(EH.x + 2.9, EH.y + H - 0.3, EH.z + z0 + s2 * 0.15), 0.012);
+  part(ehouse, GEO.box, MAT.black, [ex, H - 0.27, (W2 + z0) / 2], [0.22, 0.05, W2 - z0]);
+  part(ehouse, GEO.box, MAT.black, [0, H - 0.27, z0], [5.7, 0.05, 0.2]);
+})();
+// Cajas de conexión Ex al borde del skid, bandeja baja y escalerilla a la sala eléctrica
+(function cableRoute() {
+  const xr = -2.0, zj = -2.95, yr = 3.0, zEnd = EH.z + EH.W / 2;
+  const jb = grp(scene, [xr, 0.2, zj]);
+  for (const s2 of [-1, 1]) part(jb, GEO.box, MAT.skid, [s2 * 0.62, 0.8, 0], [0.08, 1.6, 0.08]);
+  part(jb, GEO.box, MAT.skid, [0, 1.62, 0], [1.4, 0.06, 0.08]);
+  for (const [k, x, c] of [['JB-101', -0.32, 0x2e5fa8], ['JB-102', 0.32, 0x5c6670]]) {
+    part(jb, GEO.rbox, MAT.ss, [x, 1.2, -0.12], [0.5, 0.55, 0.2]);
+    part(jb, GEO.box, M(c, 0.5, 0.2), [x, 1.42, -0.225], [0.3, 0.05, 0.006]);
+    for (let i = 0; i < 4; i++) part(jb, GEO.cyl, MAT.steel, [x - 0.15 + i * 0.1, 0.89, -0.12], [0.02, 0.06, 0.02]);
+  }
+  sign(jb, [0, 0.62, -0.06], new THREE.Quaternion().setFromAxisAngle(UP, Math.PI), 0.2);
+  reg('JB-101', jb);
+  // bandeja baja a lo largo del skid
+  for (const [a, b] of [[-6.5, xr - 0.35], [xr + 0.35, 0.6]]) {
+    for (const s2 of [-1, 1]) bar('gal', V(a, 0.95, -2.25 + s2 * 0.15), V(b, 0.95, -2.25 + s2 * 0.15), 0.012);
+    for (let x = a; x < b; x += 0.3) bar('gal', V(x, 0.95, -2.4), V(x, 0.95, -2.1), 0.008);
+    part(scene, GEO.box, MAT.black, [(a + b) / 2, 0.98, -2.25], [b - a, 0.04, 0.16]);
+  }
+  for (const s2 of [-1, 1]) bar('gal', V(xr + s2 * 0.15, 1.85, -3.05), V(xr + s2 * 0.15, yr, -3.05), 0.012);
+  // escalerilla aérea a 3 m
+  for (const s2 of [-1, 1]) bar('gal', V(xr + s2 * 0.15, yr, -3.05), V(xr + s2 * 0.15, yr, zEnd), 0.014);
+  for (let z = -3.1; z > zEnd; z -= 0.3) bar('gal', V(xr - 0.15, yr, z), V(xr + 0.15, yr, z), 0.008);
+  part(scene, GEO.box, MAT.black, [xr, yr + 0.04, (zEnd - 3.05) / 2], [0.2, 0.05, Math.abs(zEnd + 3.05)]);
+  for (const z of [-4.2, -7.2, -10.2]) {
+    bar('stl', V(xr - 0.35, 0.2, z), V(xr - 0.35, yr + 0.05, z), 0.05);
+    bar('stl', V(xr - 0.4, yr - 0.04, z), V(xr + 0.25, yr - 0.04, z), 0.035);
+    part(scene, GEO.box, MAT.concrete, [xr - 0.35, 0.12, z], [0.5, 0.24, 0.5]);
+  }
+})();
+// Área clasificada (Zona 2, extensión ilustrativa)
+const zoneG = grp(scene); zoneG.visible = false;
+(function zone() {
+  const w = 16.4 + 15, d = 4.8 + 15, h = 8.5;
+  const m = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 4, 1.5), new THREE.MeshBasicMaterial({ color: 0xe0a020, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.set(0, h / 2 + 0.01, 0); m.renderOrder = 5; zoneG.add(m);
+  const e = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(w - 0.6, h, d - 0.6)), new THREE.LineDashedMaterial({ color: 0xc48a12, dashSize: 0.6, gapSize: 0.4 }));
+  e.computeLineDistances(); e.position.copy(m.position); zoneG.add(e);
+})();
+
 /* ---------------- Límites de batería ---------------- */
 const LB = [
   ['Desde FWKO', V(-24.5, 1.3, -1.2)], ['Aceite térmico · caldera', V(-13.9, 2.3, -4.6)], ['A PIA (agua)', V(10.4, 1.3, -1.75)],
@@ -2286,7 +4489,7 @@ function label(id, tag, pos, value, o = {}) {
   el.innerHTML = `<b>${tag}</b>${value ? '<span class="v"></span>' : ''}`;
   if (id) el.addEventListener('pointerdown', e => { e.stopPropagation(); UI.openFicha(id); });
   const obj = new CSS2DObject(el); obj.position.copy(pos); scene.add(obj);
-  LBL.push({ el, obj, value, maxD: o.maxD || 999, al: o.al || [], v: el.querySelector('.v') });
+  LBL.push({ el, obj, value, maxD: o.maxD || 999, al: o.al || [], show: o.show, v: el.querySelector('.v') });
 }
 const onOff = (b) => b ? 'Abierta' : 'Cerrada';
 label('V-101', 'V-101 Deshidratador', V(2.6, YT + 1.8, 0), () => `BS&W ${fmt(S.AT101, 2)} % · ${fmt(S.Tv, 0)} °C`, { big: true, al: ['V-101', 'LT-102', 'PT-101', 'ESD'] });
@@ -2310,9 +4513,18 @@ label('XV-301', 'XV-301', V(11.0, 1.75, -1.6), () => onOff(!S.divert && S.QoOut 
 label('XV-302', 'XV-302', V(11.0, 1.65, 3.2), () => onOff(S.divert && S.QoOut > 1), { maxD: 26 });
 label('TK-301', 'TK-301 Tratado', V(18.5, 8.6, -6.0), () => `${fmt(S.tk301 * 100, 0)} %`, { big: true });
 label('TK-302', 'TK-302 Recuperación', V(17.5, 6.4, 5.5), () => `${fmt(S.tk302 * 100, 0)} %`, { al: ['LT-302'] });
-label('EP-101', 'EP-101', V(3.65, 2.6, 2.05), () => `${fmt(S.A.V, 1)} / ${fmt(S.B.V, 1)} kV`, { maxD: 22 });
+label('EP-101', 'EP-101 Estación local', V(3.65, 2.6, 2.05), () => `${fmt(S.A.V, 1)} / ${fmt(S.B.V, 1)} kV`, { maxD: 22 });
 label('X-401', 'X-401 Volquete', V(-11.3, 2.1, -3.9), () => `${fmt(S.skip * 100, 0)} %`, { maxD: 30 });
 for (const [t, p] of LB) label(null, 'LB · ' + t, p, null, { lb: true, maxD: 17 });
+label('TT-103', 'TT-103', V(-1.2, 2.75, shellZ(2.25) + 0.3), () => `${fmt(S.Tv, 1)} °C`, { maxD: 16, al: ['TT-103'] });
+label('SE-101', 'SE-101 Sala eléctrica', V(EH.x, EH.y + EH.H + 0.75, EH.z), () => `fuera del área clasificada · ${fmt(S.elecKW, 0)} kW`, { big: true, maxD: 25 });
+label('CCM-101', 'CCM-101 Motores', V(EH.x - 1.95, EH.y + 2.45, EH.z - 0.6), () => S.P101 ? `P-101 ${fmt(S.pumpKW, 0)} kW` : 'P-101 detenida', { maxD: 15 });
+label('UCP-101', 'UCP-101 PLC + HMI', V(EH.x - 0.15, EH.y + 1.85, EH.z - 0.5), () => SIM.statusText()[0], { maxD: 15 });
+label('SIS-101', 'SIS-101 PLC de seguridad', V(EH.x + 1.3, EH.y + 2.45, EH.z - 0.6), () => S.esd ? 'ESD ACTIVA' : S.LSLL ? 'Disparo de rejillas' : 'Sin disparos', { maxD: 15, al: ['ESD', 'LSLL-101'] });
+label('UPS-101', 'UPS-101', V(EH.x + 2.3, EH.y + 1.7, EH.z - 0.5), () => '10 kVA · 30 min', { maxD: 13 });
+label('JB-101', 'JB-101 / JB-102 Cajas Ex', V(-2.0, 2.15, -3.1), () => 'instrumentos y control', { maxD: 18 });
+label('ZONA', 'Zona 2 · área clasificada', V(-13.5, 8.9, -9.9), () => 'extensión ilustrativa', { maxD: 90, show: () => zoneOn });
+label('ZONA', 'Límite de la Zona 2', V(-3.4, 0.35, -9.9), () => 'de acá hacia la sala: área segura', { maxD: 30, show: () => zoneOn });
 let showLabels = true;
 const PHL = {};
 for (const [k, t] of [['oil', 'Petróleo tratado'], ['grid', 'Rejillas · campo de alta tensión'], ['emul', 'Zona de coalescencia'], ['pad', 'Colchón de emulsión'], ['water', 'Agua de producción'], ['solids', 'Arena y barros'], ['gas', 'Gas acumulado']]) {
@@ -2333,7 +4545,7 @@ for (const P of PIPES) {
 }
 
 /* ---------------- Modos de vista ---------------- */
-let flowOn = false, cutOn = false;
+let flowOn = false, cutOn = false, zoneOn = false;
 function applyModes() {
   internals.visible = cutOn || flowOn;
   phases.visible = cutOn || flowOn;
@@ -2352,9 +4564,11 @@ function applyModes() {
   MAT.shell.needsUpdate = true;
   document.getElementById('tFlow').classList.toggle('on', flowOn);
   document.getElementById('tCut').classList.toggle('on', cutOn);
+  zoneG.visible = zoneOn; document.getElementById('tZone').classList.toggle('on', zoneOn);
 }
 document.getElementById('tFlow').onclick = () => { flowOn = !flowOn; applyModes(); };
 document.getElementById('tCut').onclick = () => { cutOn = !cutOn; applyModes(); };
+document.getElementById('tZone').onclick = () => { zoneOn = !zoneOn; applyModes(); };
 document.getElementById('tLbl').onclick = (e) => { showLabels = !showLabels; e.currentTarget.classList.toggle('on', showLabels); labelR.domElement.style.display = showLabels ? '' : 'none'; };
 
 /* ---------------- Cámaras ---------------- */
@@ -2365,16 +4579,18 @@ const CAMS = {
   interfase: [[-2.4, 3.4, 6.6], [-5.2, 2.7, 2.0]],
   salidas: [[13.2, 4.8, 6.4], [7.0, 1.6, -0.4]],
   calentador: [[-7.2, 8.4, 12.6], [-16.4, 1.2, -0.6]],
-  tanques: [[4.5, 15.5, 22.5], [16.5, 3.0, -1.0]]
+  tanques: [[4.5, 15.5, 22.5], [16.5, 3.0, -1.0]],
+  control: [[4.2, 4.8, -3.4], [-1.6, 1.7, -13.4], 1.25]
 };
 let tween = null;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-function fitPos(p, t) { const a = camera.aspect, k = a < 1.25 ? Math.min(2.2, 1.25 / a) : 1; return V(...t).add(V(...p).sub(V(...t)).multiplyScalar(k)); }
+function fitPos(p, t, kmax = 2.2) { const a = camera.aspect, k = a < 1.25 ? Math.min(kmax, 1.25 / a) : 1; return V(...t).add(V(...p).sub(V(...t)).multiplyScalar(k)); }
 function goCam(name) {
-  const [p, t] = CAMS[name];
-  tween = { t: REDUCED ? 0.999 : 0, p0: camera.position.clone(), t0: controls.target.clone(), p1: fitPos(p, t), t1: V(...t) };
+  const [p, t, km] = CAMS[name];
+  tween = { t: REDUCED ? 0.999 : 0, p0: camera.position.clone(), t0: controls.target.clone(), p1: fitPos(p, t, km), t1: V(...t) };
   for (const b of document.querySelectorAll('#cams button')) b.classList.toggle('on', b.dataset.cam === name);
   if (name === 'interior' && !cutOn) { cutOn = true; applyModes(); }
+  if (name === 'control' && !zoneOn) { zoneOn = true; applyModes(); }
 }
 for (const b of document.querySelectorAll('#cams button')) b.onclick = () => goCam(b.dataset.cam);
 
@@ -2421,7 +4637,31 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme
 
 /* ---------------- Actualización de estado ---------------- */
 const tmpC = new THREE.Color();
+function drawScreen() {
+  const g = CTRL.scrCtx, W = 320, H = 200;
+  g.fillStyle = '#d6d8da'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#3b4148'; g.fillRect(0, 0, W, 26);
+  g.fillStyle = '#f1f3f5'; g.font = 'bold 13px sans-serif'; g.fillText('V-101 · RESUMEN', 8, 18);
+  const [st, cls] = SIM.statusText();
+  g.fillStyle = cls === 'alarm' ? '#d81f1a' : cls === 'warn' ? '#e98400' : '#5c636b'; g.fillRect(170, 5, 142, 16);
+  g.fillStyle = '#fff'; g.font = 'bold 10px sans-serif'; g.fillText(st.toUpperCase().slice(0, 24), 176, 17);
+  const x0 = 40, x1 = 220, y0 = 52, y1 = 150, k = (y1 - y0) / 3.6;
+  g.save(); g.beginPath(); g.roundRect(x0, y0, x1 - x0, y1 - y0, 40); g.clip();
+  g.fillStyle = '#e9ebec'; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+  g.fillStyle = '#9aa6b2'; g.fillRect(x0, y1 - S.hi * k, x1 - x0, S.hi * k);
+  g.fillStyle = '#b9b2a5'; g.fillRect(x0, y1 - (S.hi + S.pad) * k, x1 - x0, S.pad * k);
+  g.strokeStyle = '#4a5056'; g.setLineDash([3, 3]); for (const yy of [2.3, 2.62]) { g.beginPath(); g.moveTo(x0 + 20, y1 - yy * k); g.lineTo(x1 - 20, y1 - yy * k); g.stroke(); }
+  g.restore(); g.setLineDash([]); g.strokeStyle = '#555c63'; g.lineWidth = 2; g.beginPath(); g.roundRect(x0, y0, x1 - x0, y1 - y0, 40); g.stroke();
+  g.fillStyle = '#1d2125'; g.font = 'bold 11px monospace';
+  const rows = [['BS&W', fmt(S.AT101, 2) + ' %'], ['Interf.', fmt(S.hiMeas, 2) + ' m'], ['Temp.', fmt(S.Tv, 1) + ' °C'], ['Rej. A', fmt(S.A.V, 1) + ' kV'], ['Rej. B', fmt(S.B.V, 1) + ' kV']];
+  rows.forEach(([a, b], i) => { g.fillStyle = '#3a4046'; g.fillText(a, 232, 60 + i * 20); g.fillStyle = '#1d2125'; g.fillText(b, 232, 72 + i * 20); });
+  const act = S.alarms.filter(a => a.active);
+  g.fillStyle = act.length ? (act.some(a => a.pr === 1) ? '#d81f1a' : '#e98400') : '#575e66'; g.fillRect(8, 168, 304, 24);
+  g.fillStyle = '#fff'; g.font = 'bold 11px sans-serif'; g.fillText(act.length ? `${act[0].tag} · ${act[0].txt}`.slice(0, 46) : 'Sin alarmas activas', 14, 184);
+  CTRL.scrTex.needsUpdate = true;
+}
 function stateUpdate() {
+  const now0 = performance.now();
   const al = SIM.alarmTags();
   for (const L of LBL) {
     if (L.v && L.value) L.v.textContent = L.value();
@@ -2440,6 +4680,10 @@ function stateUpdate() {
   lamps[0].material.emissiveIntensity = S.rampA > 0.5 ? 1.2 : 0.05; lamps[1].material.emissiveIntensity = S.tripA ? 1.2 : 0.05;
   lamps[2].material.emissiveIntensity = S.rampB > 0.5 ? 1.2 : 0.05; lamps[3].material.emissiveIntensity = S.tripB ? 1.2 : 0.05;
   const pl = window.__p101.userData.lamp.material; pl.emissiveIntensity = S.P101 ? 1.0 : 0.05;
+  if (CTRL.drawerLamps) CTRL.drawerLamps.forEach((l, i) => { l.material.emissiveIntensity = (i === 0 && S.P101) || (i === 1 && S.P201) || (i === 2 && S.rampA > 0.5) || (i === 3 && S.rampB > 0.5) || i > 9 ? 1.0 : 0.05; });
+  const sl = CTRL.sisLamp.material, bad = S.esd || S.LSLL; sl.color.set(bad ? 0xd0453a : 0x2f9a5f); sl.emissive.copy(sl.color);
+  CTRL.ucpLamps[2].material.emissiveIntensity = S.alarms.some(a => a.active && !a.acked) ? (Math.floor(performance.now() / 500) % 2 ? 1 : 0.05) : 0.05;
+  if (now0 - (CTRL.lastScr || 0) > 900) { CTRL.lastScr = now0; drawScreen(); }
   window.__tote.scale.y = Math.max(0.02, S.tote * 0.84); window.__tote.position.y = 0.2 + window.__tote.scale.y / 2;
   window.__skipFill.scale.y = Math.max(0.01, S.skip * 1.0); window.__skipFill.position.y = 0.14 + window.__skipFill.scale.y / 2;
   for (const [id, lv] of [['TK-301', S.tk301], ['TK-302', S.tk302]]) { const T = TANK[id]; T.liq.scale.y = Math.max(0.01, lv * T.H); T.liq.position.y = 0.24 + T.liq.scale.y / 2; }
@@ -2458,6 +4702,7 @@ let lastState = 0;
 const clock = new THREE.Clock();
 function frame(dtReal) {
   const dt = Math.min(0.1, clock.getDelta());
+  if (SIM.view && SIM.view !== '3d') return;
   if (tween) {
     tween.t = Math.min(1, tween.t + dt / 1.2);
     const k = tween.t < 0.5 ? 2 * tween.t * tween.t : 1 - Math.pow(-2 * tween.t + 2, 2) / 2;
@@ -2496,7 +4741,7 @@ function frame(dtReal) {
   }
   renderer.render(scene, camera);
   if (showLabels) {
-    for (const L of LBL) { const d = camera.position.distanceTo(L.obj.position); L.el.classList.toggle('hide', d > L.maxD); }
+    for (const L of LBL) { const d = camera.position.distanceTo(L.obj.position); L.el.classList.toggle('hide', d > L.maxD || (!!L.show && !L.show())); }
     labelR.render(scene, camera);
   }
 }
@@ -2512,7 +4757,7 @@ new ResizeObserver(resize).observe(host);
 resize();
 camera.position.copy(fitPos(CAMS.general[0], CAMS.general[1])); controls.update();
 SIM.onFrame.push(frame);
-SIM._three = { renderer, scene, camera, controls, goCam, snapCam: (n) => { const [p, t] = CAMS[n]; tween = null; camera.position.copy(fitPos(p, t)); controls.target.set(...t); controls.update(); if (n === 'interior' && !cutOn) { cutOn = true; applyModes(); } }, setModes: (f, c) => { flowOn = !!f; cutOn = !!c; applyModes(); } };
+SIM._three = { renderer, scene, camera, controls, goCam, snapCam: (n) => { const [p, t, km] = CAMS[n]; tween = null; camera.position.copy(fitPos(p, t, km)); controls.target.set(...t); controls.update(); if (n === 'interior' && !cutOn) { cutOn = true; applyModes(); } if (n === 'control' && !zoneOn) { zoneOn = true; applyModes(); } }, setModes: (f, c, z) => { flowOn = !!f; cutOn = !!c; zoneOn = !!z; applyModes(); } };
 
 </script>
 </body>
